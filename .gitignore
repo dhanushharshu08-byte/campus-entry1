@@ -1,0 +1,41 @@
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Python & Backend
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+*.db
+.sqlite
+.sqlite3
+backend/campus_helpdesk.db
+backend/instance/
+backend/backups/
+backend/uploads/issues/*
+backend/uploads/resolutions/*
+!backend/uploads/issues/.gitkeep
+!backend/uploads/resolutions/.gitkeep
+uploads/issues/*
+uploads/resolutions/*
+!uploads/issues/.gitkeep
+!uploads/resolutions/.gitkeep
+
+# Node & Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Archives
+*.zip
+*.tar.gz
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
