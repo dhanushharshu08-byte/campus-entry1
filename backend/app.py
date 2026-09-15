@@ -162,9 +162,12 @@ def create_app(config_class=Config):
         except Exception as err:
             logger.debug(f"System settings init notice: {err}")
 
-    # Start background SLA worker thread if not running automated unit tests
-    if not app.config.get('TESTING', False):
-        start_sla_worker(app, interval_seconds=45)
+    # Start background SLA worker thread if not running automated unit tests or serverless
+    if not app.config.get('TESTING', False) and not os.environ.get('VERCEL'):
+        try:
+            start_sla_worker(app, interval_seconds=45)
+        except Exception as e:
+            logger.warning(f"Could not start background SLA worker: {e}")
 
     return app
 
