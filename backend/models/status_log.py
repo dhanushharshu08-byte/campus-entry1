@@ -1,5 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from extensions import db
+
+
+def _utcnow():
+    return datetime.now(timezone.utc)
+
 
 class StatusLog(db.Model):
     __tablename__ = 'status_logs'
@@ -11,7 +16,7 @@ class StatusLog(db.Model):
     new_status = db.Column(db.String(30), nullable=False)
     comments = db.Column(db.Text, nullable=True)
     is_internal = db.Column(db.Boolean, default=False, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    timestamp = db.Column(db.DateTime, default=_utcnow, index=True)
 
     # Relationship to user who made change
     changed_by = db.relationship('User', foreign_keys=[changed_by_id])

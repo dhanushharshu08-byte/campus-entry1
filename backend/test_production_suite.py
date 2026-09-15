@@ -18,7 +18,7 @@ import os
 import io
 import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash
 
 # Setup environment
@@ -209,7 +209,7 @@ class ProductionTestSuite(unittest.TestCase):
     # 8-13. SLA Metrics, Countdown & Multi-tier Escalations
     # -------------------------------------------------------------
     def test_08_sla_remaining_time_calculation(self):
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         comp = self._create_complaint(
             title='Test SLA Helper',
             department_id=self.dept_elec.id,
@@ -217,11 +217,12 @@ class ProductionTestSuite(unittest.TestCase):
             sla_deadline=now + timedelta(hours=2, minutes=30)
         )
         remaining_secs = comp.get_remaining_seconds()
+        self.assertIsNotNone(remaining_secs)
         self.assertTrue(remaining_secs > 0)
         self.assertFalse(comp.check_overdue())
 
     def test_09_sla_breach_detection(self):
-        past = datetime.utcnow() - timedelta(hours=6)
+        past = datetime.now(timezone.utc) - timedelta(hours=6)
         comp = self._create_complaint(
             title='Overdue Ticket',
             department_id=self.dept_elec.id,
@@ -231,7 +232,7 @@ class ProductionTestSuite(unittest.TestCase):
         self.assertTrue(comp.check_overdue())
 
     def test_10_sla_level1_approaching_escalation(self):
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         # High priority total = 4h. 25% threshold = 1h remaining.
         # Created 3.5h ago -> 0.5h remaining (12.5% remaining <= 25%)
         comp = self._create_complaint(
@@ -250,7 +251,7 @@ class ProductionTestSuite(unittest.TestCase):
         self.assertIsNotNone(log)
 
     def test_11_sla_level2_breach_escalation(self):
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         comp = self._create_complaint(
             title='Breached Ticket',
             department_id=self.dept_elec.id,
@@ -269,7 +270,7 @@ class ProductionTestSuite(unittest.TestCase):
         self.assertTrue(comp.is_overdue)
 
     def test_12_sla_level3_critical_escalation(self):
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         # 4h High priority * 2.0x = 8h elapsed. Created 9h ago.
         comp = self._create_complaint(
             title='Critical Overdue Ticket',
@@ -287,7 +288,7 @@ class ProductionTestSuite(unittest.TestCase):
         self.assertIsNotNone(log)
 
     def test_13_escalation_log_deduplication(self):
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         comp = self._create_complaint(
             title='Dedup Ticket',
             department_id=self.dept_elec.id,

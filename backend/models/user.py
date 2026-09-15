@@ -3,6 +3,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from extensions import db, login_manager
 
+
+def _utcnow():
+    return datetime.now(timezone.utc)
+
+
 VALID_ROLES = {'student', 'faculty', 'maintenance', 'management'}
 
 class User(UserMixin, db.Model):
@@ -18,8 +23,8 @@ class User(UserMixin, db.Model):
     employee_or_student_id = db.Column(db.String(50), nullable=True, index=True)
     phone = db.Column(db.String(25), nullable=True)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=_utcnow)
+    updated_at = db.Column(db.DateTime, default=_utcnow, onupdate=_utcnow)
     last_login = db.Column(db.DateTime, nullable=True)
 
     # Notifications relationship

@@ -1,7 +1,7 @@
 import io
 import sys
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app import create_app
 from config import Config
 from extensions import db
@@ -81,7 +81,9 @@ class TestPrompt6Suite(unittest.TestCase):
             status="In Progress",
             created_by=self.student_id,
             assigned_to=self.electrician_id,
-            created_at=datetime.utcnow() - timedelta(hours=60) # Overdue (>48h)
+            created_at=datetime.now(timezone.utc) - timedelta(hours=60), # Overdue (>48h)
+            sla_deadline=datetime.now(timezone.utc) - timedelta(hours=56),
+            is_overdue=True
         )
         c2 = Complaint(
             complaint_number="CH-2026-00002",
@@ -105,7 +107,7 @@ class TestPrompt6Suite(unittest.TestCase):
             created_by=self.student_id,
             assigned_to=self.electrician_id,
             resolution_remarks="Switch replaced successfully",
-            resolved_at=datetime.utcnow() - timedelta(hours=2)
+            resolved_at=datetime.now(timezone.utc) - timedelta(hours=2)
         )
         db.session.add_all([c1, c2, c3])
         db.session.commit()

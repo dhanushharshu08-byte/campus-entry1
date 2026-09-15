@@ -4,7 +4,7 @@ Assigns new grievances to the least-loaded active maintenance employee in the ta
 with fallback to general maintenance staff if department-specific staff is unavailable.
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import func
 from extensions import db
 from models.user import User
@@ -91,7 +91,7 @@ def assign_complaint_to_department_staff(complaint):
 
     # Assign complaint to selected staff member and record timestamp
     complaint.assigned_to = selected_staff.id
-    complaint.assigned_at = datetime.utcnow()
+    complaint.assigned_at = datetime.now(timezone.utc)
     complaint.status = 'Assigned'
 
     # Create notification for assigned maintenance user with exact prompt details

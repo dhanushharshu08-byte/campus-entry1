@@ -1,5 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from extensions import db
+
+
+def _utcnow():
+    return datetime.now(timezone.utc)
+
 
 class AuditLog(db.Model):
     __tablename__ = 'audit_logs'
@@ -12,7 +17,7 @@ class AuditLog(db.Model):
     old_value = db.Column(db.Text, nullable=True)
     new_value = db.Column(db.Text, nullable=True)
     ip_address = db.Column(db.String(50), nullable=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    timestamp = db.Column(db.DateTime, default=_utcnow, index=True)
 
     # Relationships
     user = db.relationship('User', foreign_keys=[user_id])

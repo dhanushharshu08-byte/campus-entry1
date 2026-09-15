@@ -3,7 +3,7 @@ Maintenance Staff Grievance Management Routes for CampuSentry Helpdesk.
 Provides centralized endpoints for the Maintenance role to view, filter across all departments,
 and resolve grievance tickets.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from sqlalchemy import or_, func
@@ -59,7 +59,7 @@ def list_maintenance_complaints():
     # Overdue Filter
     overdue_only = request.args.get('overdue')
     if overdue_only == 'true':
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         query = query.filter(
             Complaint.status.in_(['Submitted', 'Assigned', 'In Progress']),
             or_(Complaint.is_overdue == True, Complaint.sla_deadline < now)
@@ -105,7 +105,7 @@ def get_maintenance_stats():
     Returns summary statistics across ALL maintenance departments.
     Includes overall status counts and department-wise breakdown.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     total_complaints = Complaint.query.count()
     submitted = Complaint.query.filter_by(status='Submitted').count()
@@ -190,7 +190,7 @@ def accept_complaint(complaint_id):
         }), 400
 
     old_status = complaint.status
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     complaint.status = 'In Progress'
     complaint.updated_at = now
     if not complaint.assigned_to:
@@ -264,11 +264,11 @@ def resolve_complaint(complaint_id):
             "message": "Access forbidden. You cannot modify complaints belonging to another maintenance department."
         }), 403
 
-    # Valid Status Transition Check
-    if complaint.status not in ['In Progress', 'Assigned', 'Submitted']:
+    # Valid Status Transition Check: Ticket must be in progress to be resolved
+    if complaint.status != 'In Progress':
         return jsonify({
             "success": False,
-            "message": f"Cannot resolve complaint with current status '{complaint.status}'."
+            "message": f"Cannot resolve complaint with current status '{complaint.status}'. Ticket must be 'In Progress' to be resolved."
         }), 400
 
     # Fields & File Extraction
@@ -317,7 +317,7 @@ def resolve_complaint(complaint_id):
 
     try:
         old_status = complaint.status
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         complaint.status = 'Resolved'
         complaint.resolution_remarks = remarks
         complaint.resolution_photo = rel_photo_url
@@ -328,7 +328,10 @@ def resolve_complaint(complaint_id):
 
         # Calculate resolution time in minutes
         if complaint.created_at:
-            mins = (now - complaint.created_at).total_seconds() / 60.0
+            created_at_dt = complaint.created_at
+            if created_at_dt.tzinfo is None:
+                created_at_dt = created_at_dt.replace(tzinfo=timezone.utc)
+            mins = (now - created_at_dt).total_seconds() / 60.0
             complaint.resolution_time_minutes = max(0.0, mins)
 
         # Status Log

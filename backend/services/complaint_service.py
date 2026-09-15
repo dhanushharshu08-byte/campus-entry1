@@ -1,7 +1,7 @@
 import os
 import uuid
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from extensions import db
 from models.complaint import Complaint
 from models.status_log import StatusLog
@@ -23,7 +23,7 @@ def generate_complaint_number():
     Generates a human-readable complaint number formatted as:
     CH-YYYY-XXXXX (e.g., CH-2026-00001)
     """
-    year = datetime.utcnow().strftime('%Y')
+    year = datetime.now(timezone.utc).strftime('%Y')
     prefix = f"CH-{year}-"
     
     # Query highest complaint number for current year

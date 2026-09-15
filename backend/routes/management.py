@@ -18,7 +18,7 @@ import io
 import re
 import csv
 import shutil
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify, Response, current_app
 from flask_login import login_required, current_user
 from sqlalchemy import or_, func, desc, asc
@@ -49,6 +49,13 @@ from services.socket_service import (
     emit_department_updated
 )
 
+def _to_utc(dt):
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
 management_bp = Blueprint('management', __name__, url_prefix='/api/management')
 
 # ==============================================================================
@@ -61,7 +68,7 @@ management_bp = Blueprint('management', __name__, url_prefix='/api/management')
 @role_required('management')
 def get_dashboard_stats():
     """Returns college-wide overall grievance metrics from SQLite."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     total = Complaint.query.count()
     submitted = Complaint.query.filter_by(status='Submitted').count()
     assigned = Complaint.query.filter_by(status='Assigned').count()
@@ -101,7 +108,7 @@ def get_dashboard_stats():
 def get_department_performance():
     """Returns department-wise performance breakdown for all active departments."""
     departments = Department.query.filter_by(is_active=True).all()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     result = []
 
     for dept in departments:
@@ -120,7 +127,7 @@ def get_department_performance():
 
         # Compute SLA compliance % and average resolution time
         completed = dept_complaints.filter(Complaint.status.in_(['Resolved', 'Closed'])).all()
-        within_sla_count = sum(1 for c in completed if c.resolved_at and c.sla_deadline and c.resolved_at <= c.sla_deadline)
+        within_sla_count = sum(1 for c in completed if c.resolved_at and c.sla_deadline and _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline))
         sla_pct = round((within_sla_count / len(completed) * 100), 1) if completed else 100.0
 
         res_times = [c.resolution_time_minutes for c in completed if c.resolution_time_minutes is not None]
@@ -155,7 +162,7 @@ def get_complaint_trends():
     if days < 1 or days > 365:
         days = 30
 
-    start_date = datetime.utcnow().date() - timedelta(days=days - 1)
+    start_date = datetime.now(timezone.utc).date() - timedelta(days=days - 1)
     complaints = Complaint.query.filter(
         func.date(Complaint.created_at) >= start_date
     ).all()
@@ -226,7 +233,7 @@ def list_all_complaints():
     # Overdue Filter
     overdue = request.args.get('overdue')
     if overdue == 'true':
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         query = query.filter(
             Complaint.status.in_(['Assigned', 'In Progress']),
             or_(Complaint.is_overdue == True, Complaint.sla_deadline < now)
@@ -316,11 +323,12 @@ def get_unassigned_complaints():
         Complaint.assigned_to.is_(None)
     ).order_by(Complaint.created_at.asc()).all()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     result = []
     for c in complaints:
         comp_dict = c.to_dict()
-        age_hours = round((now - c.created_at).total_seconds() / 3600, 1) if c.created_at else 0
+        created_at_dt = _to_utc(c.created_at)
+        age_hours = round((now - created_at_dt).total_seconds() / 3600, 1) if created_at_dt else 0
         comp_dict['age_hours'] = age_hours
         result.append(comp_dict)
 
@@ -336,7 +344,7 @@ def get_unassigned_complaints():
 @role_required('management')
 def get_overdue_complaints():
     """Returns active complaints that have breached the SLA deadline."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     overdue_complaints = Complaint.query.filter(
         Complaint.status.in_(['Assigned', 'In Progress', 'Submitted']),
         or_(Complaint.is_overdue == True, Complaint.sla_deadline < now)
@@ -346,8 +354,9 @@ def get_overdue_complaints():
     for c in overdue_complaints:
         comp_dict = c.to_dict()
         hours_overdue = 0.0
-        if c.sla_deadline and now > c.sla_deadline:
-            hours_overdue = round((now - c.sla_deadline).total_seconds() / 3600.0, 1)
+        sla_deadline_dt = _to_utc(c.sla_deadline)
+        if sla_deadline_dt and now > sla_deadline_dt:
+            hours_overdue = round((now - sla_deadline_dt).total_seconds() / 3600.0, 1)
         comp_dict['hours_overdue'] = hours_overdue
         result.append(comp_dict)
 
@@ -364,7 +373,7 @@ def get_overdue_complaints():
 def get_staff_performance():
     """Returns workload and performance metrics for active maintenance staff members."""
     staff_members = User.query.filter_by(role='maintenance', is_active=True).all()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     result = []
 
     for staff in staff_members:
@@ -473,7 +482,7 @@ def manual_assign_complaint(complaint_id):
             "message": f"Staff member '{staff.name}' does not belong to the complaint's department ({dept_name})."
         }), 400
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     old_status = complaint.status
     complaint.assigned_to = staff.id
     complaint.assigned_at = now
@@ -555,7 +564,7 @@ def reassign_complaint(complaint_id):
     if old_staff_id == new_staff.id:
         return jsonify({"success": False, "message": "Complaint is already assigned to this employee."}), 400
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     complaint.assigned_to = new_staff.id
     complaint.assigned_at = now
     complaint.updated_at = now
@@ -641,7 +650,7 @@ def change_complaint_priority(complaint_id):
         return jsonify({"success": True, "message": f"Priority is already {new_priority}.", "complaint": complaint.to_dict()}), 200
 
     complaint.priority = new_priority
-    complaint.updated_at = datetime.utcnow()
+    complaint.updated_at = datetime.now(timezone.utc)
 
     # Recalculate SLA deadline for active complaints
     recalculate_sla_on_priority_change(complaint)
@@ -709,7 +718,7 @@ def add_internal_remark(complaint_id):
         new_status=complaint.status,
         comments=remark,
         is_internal=True,
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
     db.session.add(log)
 
@@ -1071,7 +1080,7 @@ def edit_user(user_id):
             emit_department_updated(new_dept.id)
             emit_user_status_changed(user.id, user.is_active)
 
-    user.updated_at = datetime.utcnow()
+    user.updated_at = datetime.now(timezone.utc)
 
     # Log general user edit audit
     if not department_changed:
@@ -1120,7 +1129,7 @@ def change_user_password(user_id):
 
     try:
         user.set_password(new_password)
-        user.updated_at = datetime.utcnow()
+        user.updated_at = datetime.now(timezone.utc)
 
         audit_action = "Management password changed" if user.role == 'management' else "Maintenance password reset by management."
         log_audit(
@@ -1169,7 +1178,7 @@ def toggle_user_status(user_id):
 
     old_status = user.is_active
     user.is_active = new_status
-    user.updated_at = datetime.utcnow()
+    user.updated_at = datetime.now(timezone.utc)
 
     # Active complaints check if deactivating maintenance staff
     active_complaints_count = 0
@@ -1275,7 +1284,7 @@ def reassign_user_complaints(user_id):
     if not complaints_to_reassign:
         return jsonify({"success": False, "message": "No active complaints found to reassign."}), 400
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     for comp in complaints_to_reassign:
         comp.assigned_to = new_staff.id
         comp.updated_at = now
@@ -1350,7 +1359,7 @@ def disable_and_reassign_user(user_id):
         Complaint.status.in_(['Assigned', 'In Progress'])
     ).all()
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     user.is_active = False
     user.updated_at = now
 
@@ -1415,7 +1424,7 @@ def disable_and_reassign_user(user_id):
 def list_staff_roster():
     """Returns comprehensive maintenance staff roster with active and overdue workloads."""
     staff = User.query.filter_by(role='maintenance').order_by(User.name.asc()).all()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     result = []
 
     for s in staff:
@@ -1617,7 +1626,7 @@ def update_settings():
 def get_reports():
     """Generates filtered report data for complaints, departments, staff, SLA, and overdue metrics."""
     query = Complaint.query
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # Apply Filters
     dept_id = request.args.get('department_id', type=int)
@@ -1660,10 +1669,10 @@ def get_reports():
     in_progress = sum(1 for c in complaints if c.status == 'In Progress')
     assigned = sum(1 for c in complaints if c.status == 'Assigned')
     submitted = sum(1 for c in complaints if c.status == 'Submitted')
-    overdue = sum(1 for c in complaints if c.status in ['Assigned', 'In Progress', 'Submitted'] and (c.is_overdue or (c.sla_deadline and now > c.sla_deadline)))
+    overdue = sum(1 for c in complaints if c.status in ['Assigned', 'In Progress', 'Submitted'] and (c.is_overdue or (c.sla_deadline and now > _to_utc(c.sla_deadline))))
 
     completed = [c for c in complaints if c.status in ['Resolved', 'Closed']]
-    within_sla = sum(1 for c in completed if c.resolved_at and c.sla_deadline and c.resolved_at <= c.sla_deadline)
+    within_sla = sum(1 for c in completed if c.resolved_at and c.sla_deadline and _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline))
     sla_compliance_pct = round((within_sla / len(completed) * 100), 1) if completed else 100.0
 
     res_times = [c.resolution_time_minutes for c in completed if c.resolution_time_minutes is not None]
@@ -1691,11 +1700,11 @@ def get_reports():
 @role_required('management')
 def get_sla_analytics():
     """Returns SLA compliance and performance breakdown."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     total = Complaint.query.count()
     completed = Complaint.query.filter(Complaint.status.in_(['Resolved', 'Closed'])).all()
     
-    within_sla = sum(1 for c in completed if c.resolved_at and c.sla_deadline and c.resolved_at <= c.sla_deadline)
+    within_sla = sum(1 for c in completed if c.resolved_at and c.sla_deadline and _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline))
     after_sla = len(completed) - within_sla
     currently_overdue = Complaint.query.filter(
         Complaint.status.in_(['Assigned', 'In Progress', 'Submitted']),
@@ -1811,7 +1820,7 @@ def export_complaints_csv():
     return Response(
         output.getvalue(),
         mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment;filename=complaints_report_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"}
+        headers={"Content-Disposition": f"attachment;filename=complaints_report_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.csv"}
     )
 
 
@@ -1821,7 +1830,7 @@ def export_complaints_csv():
 def export_departments_csv():
     """Exports department performance breakdown to CSV."""
     departments = Department.query.all()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     output = io.StringIO()
     writer = csv.writer(output)
 
@@ -1845,7 +1854,7 @@ def export_departments_csv():
         ).count()
 
         completed = dept_complaints.filter(Complaint.status.in_(['Resolved', 'Closed'])).all()
-        within_sla = sum(1 for c in completed if c.resolved_at and c.sla_deadline and c.resolved_at <= c.sla_deadline)
+        within_sla = sum(1 for c in completed if c.resolved_at and c.sla_deadline and _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline))
         sla_pct = round((within_sla / len(completed) * 100), 1) if completed else 100.0
         res_times = [c.resolution_time_minutes for c in completed if c.resolution_time_minutes is not None]
         avg_res = round(sum(res_times) / len(res_times), 1) if res_times else 0.0
@@ -1859,7 +1868,7 @@ def export_departments_csv():
     return Response(
         output.getvalue(),
         mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment;filename=department_performance_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"}
+        headers={"Content-Disposition": f"attachment;filename=department_performance_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.csv"}
     )
 
 
@@ -1869,7 +1878,7 @@ def export_departments_csv():
 def export_staff_csv():
     """Exports maintenance staff metrics to CSV."""
     staff_members = User.query.filter_by(role='maintenance').all()
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     output = io.StringIO()
     writer = csv.writer(output)
 
@@ -1890,7 +1899,7 @@ def export_staff_csv():
         ).count()
 
         completed = tickets.filter(Complaint.status.in_(['Resolved', 'Closed'])).all()
-        within_sla = sum(1 for c in completed if c.resolved_at and c.sla_deadline and c.resolved_at <= c.sla_deadline)
+        within_sla = sum(1 for c in completed if c.resolved_at and c.sla_deadline and _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline))
         sla_pct = round((within_sla / len(completed) * 100), 1) if completed else 100.0
         res_times = [c.resolution_time_minutes for c in completed if c.resolution_time_minutes is not None]
         avg_res = round(sum(res_times) / len(res_times), 1) if res_times else 0.0
@@ -1913,7 +1922,7 @@ def export_staff_csv():
     return Response(
         output.getvalue(),
         mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment;filename=staff_performance_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"}
+        headers={"Content-Disposition": f"attachment;filename=staff_performance_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.csv"}
     )
 
 
@@ -1935,7 +1944,7 @@ def export_sla_csv():
     for c in complaints:
         sla_met = "N/A"
         if c.resolved_at and c.sla_deadline:
-            sla_met = "YES" if c.resolved_at <= c.sla_deadline else "NO"
+            sla_met = "YES" if _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline) else "NO"
 
         writer.writerow([
             c.complaint_number,
@@ -1952,7 +1961,7 @@ def export_sla_csv():
     return Response(
         output.getvalue(),
         mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment;filename=sla_performance_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"}
+        headers={"Content-Disposition": f"attachment;filename=sla_performance_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.csv"}
     )
 
 
@@ -2028,7 +2037,7 @@ def create_database_backup():
         backups_dir = os.path.join(base_dir, 'backups')
         os.makedirs(backups_dir, exist_ok=True)
 
-        timestamp_str = datetime.utcnow().strftime('%Y-%m-%d_%H%M%S')
+        timestamp_str = datetime.now(timezone.utc).strftime('%Y-%m-%d_%H%M%S')
         backup_filename = f"helpdesk_backup_{timestamp_str}.db"
         backup_path = os.path.join(backups_dir, backup_filename)
 

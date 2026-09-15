@@ -1,5 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from extensions import db
+
+
+def _utcnow():
+    return datetime.now(timezone.utc)
+
 
 class Notification(db.Model):
     __tablename__ = 'notifications'
@@ -11,7 +16,7 @@ class Notification(db.Model):
     message = db.Column(db.Text, nullable=False)
     type = db.Column(db.String(50), nullable=False, default='info')  # complaint_assigned, status_update, unassigned_complaint, info
     is_read = db.Column(db.Boolean, default=False, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime, default=_utcnow, index=True)
 
     complaint = db.relationship('Complaint', foreign_keys=[complaint_id], backref=db.backref('notifications', lazy='dynamic'))
 

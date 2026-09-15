@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from sqlalchemy import or_
@@ -58,16 +58,18 @@ def create_complaint():
     elif len(location) < 3:
         errors.append("Location must be at least 3 characters long.")
 
+    department_id = None
     if not dept_id_raw:
         errors.append("Department is required.")
     else:
         dept = None
         try:
-            if str(dept_id_raw).isdigit():
-                department_id = int(dept_id_raw)
+            dept_id_str = dept_id_raw.strip()
+            if dept_id_str.isdigit():
+                department_id = int(dept_id_str)
                 dept = Department.query.get(department_id)
             else:
-                dept = Department.query.filter_by(name=str(dept_id_raw).strip()).first()
+                dept = Department.query.filter_by(name=dept_id_str).first()
                 if dept:
                     department_id = dept.id
             if not dept or not dept.is_active:
@@ -122,7 +124,7 @@ def create_complaint():
             status='Submitted',
             created_by=current_user.id,
             issue_photo=rel_photo_url,
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
         # Compute SLA deadline based on priority setting
         calculate_initial_sla(complaint)
@@ -152,7 +154,7 @@ def create_complaint():
         assigned_staff = assign_complaint_to_department_staff(complaint)
 
         if assigned_staff:
-            complaint.assigned_at = datetime.utcnow()
+            complaint.assigned_at = datetime.now(timezone.utc)
             log_status_change(
                 complaint_id=complaint.id,
                 new_status='Assigned',
@@ -323,8 +325,8 @@ def close_complaint(complaint_id):
 
     old_status = complaint.status
     complaint.status = 'Closed'
-    complaint.closed_at = datetime.utcnow()
-    complaint.updated_at = datetime.utcnow()
+    complaint.closed_at = datetime.now(timezone.utc)
+    complaint.updated_at = datetime.now(timezone.utc)
 
     # Calculate final resolution time in minutes if not already set
     if complaint.created_at and not complaint.resolution_time_minutes:
@@ -419,7 +421,7 @@ def reopen_complaint(complaint_id):
 
     old_status = complaint.status
     complaint.status = 'In Progress'
-    complaint.updated_at = datetime.utcnow()
+    complaint.updated_at = datetime.now(timezone.utc)
 
     # Status Log
     log_status_change(

@@ -3,7 +3,7 @@ Universal and Role-Specific Dashboard Metrics API for CampuSentry Helpdesk.
 All statistics and distributions are calculated dynamically from real SQLite database records.
 No fake, static, or placeholder data is ever returned.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 from sqlalchemy import or_
@@ -22,7 +22,7 @@ def get_summary():
     Returns global complaint status summary dynamically calculated from SQLite.
     When database is empty, all values return 0.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     total = Complaint.query.count()
     submitted = Complaint.query.filter_by(status='Submitted').count()
@@ -77,7 +77,7 @@ def get_status_statistics():
     """
     Returns complaint counts by status from SQLite.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     submitted = Complaint.query.filter_by(status='Submitted').count()
     assigned = Complaint.query.filter_by(status='Assigned').count()
@@ -142,7 +142,7 @@ def get_stats():
     """
     Comprehensive overview metrics dynamically computed from SQLite.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     total_complaints = Complaint.query.count()
     submitted_count = Complaint.query.filter_by(status='Submitted').count()

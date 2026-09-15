@@ -13,7 +13,7 @@ Validates:
 
 import unittest
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash
 
 os.environ['FLASK_ENV'] = 'testing'
@@ -235,7 +235,7 @@ class Prompt12ZeroMockRealtimeTestSuite(unittest.TestCase):
         elec_dept = Department.query.filter_by(name='Electrical').first()
 
         # Create complaint with past deadline
-        past_deadline = datetime.utcnow() - timedelta(hours=3)
+        past_deadline = datetime.now(timezone.utc) - timedelta(hours=3)
         comp = Complaint(
             complaint_number='CH-OVERDUE-01',
             title='Corridor Lighting Failure',
@@ -246,7 +246,7 @@ class Prompt12ZeroMockRealtimeTestSuite(unittest.TestCase):
             status='In Progress',
             created_by=self.student.id,
             assigned_to=self.maintenance.id,
-            created_at=datetime.utcnow() - timedelta(hours=8),
+            created_at=datetime.now(timezone.utc) - timedelta(hours=8),
             sla_deadline=past_deadline,
             is_overdue=True
         )
@@ -259,7 +259,7 @@ class Prompt12ZeroMockRealtimeTestSuite(unittest.TestCase):
 
         # When closed, overdue becomes 0
         comp.status = 'Closed'
-        comp.closed_at = datetime.utcnow()
+        comp.closed_at = datetime.now(timezone.utc)
         db.session.commit()
 
         summary_res = self.client.get('/api/dashboard/summary')

@@ -158,6 +158,7 @@ class Prompt9UserManagementTestSuite(unittest.TestCase):
         self.assertEqual(comp_res.status_code, 201)
         comp_id = comp_res.get_json()['complaint']['id']
         comp = Complaint.query.get(comp_id)
+        self.assertIsNotNone(comp)
         
         # Ensure it is assigned to Ravi Kumar
         comp.assigned_to = ravi_id
@@ -172,6 +173,7 @@ class Prompt9UserManagementTestSuite(unittest.TestCase):
         })
         self.assertEqual(dept_change_res.status_code, 200)
         ravi_user = User.query.get(ravi_id)
+        self.assertIsNotNone(ravi_user)
         self.assertEqual(ravi_user.department, 'Plumbing')
         self.assertEqual(ravi_user.department_id, self.dept_plumb.id)
 
@@ -211,6 +213,7 @@ class Prompt9UserManagementTestSuite(unittest.TestCase):
 
         # 15. Verify new employee receives notifications & StatusLog / AuditLog records
         db.session.refresh(ravi_user)
+        self.assertIsNotNone(ravi_user)
         self.assertFalse(ravi_user.is_active)
         db.session.refresh(comp)
         self.assertEqual(comp.assigned_to, vikram_id)

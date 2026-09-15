@@ -33,6 +33,7 @@ def register():
     role = (data.get('role') or '').strip().lower()
     employee_or_student_id = (data.get('employee_or_student_id') or '').strip()
     phone = (data.get('phone') or '').strip()
+    department = (data.get('department') or '').strip()
 
     # Validation
     errors = []
@@ -74,6 +75,7 @@ def register():
             name=name,
             email=email,
             role=role,
+            department=department or None,
             employee_or_student_id=employee_or_student_id or None,
             phone=phone or None,
             is_active=True
@@ -184,7 +186,7 @@ def login():
             db.session.rollback()
         return jsonify({
             "success": False,
-            "message": "Your account is disabled. Please contact college administration."
+            "message": "Your account is inactive / disabled. Please contact college administration."
         }), 403
 
     user.last_login = datetime.now(timezone.utc)

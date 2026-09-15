@@ -23,13 +23,29 @@ export const COLLEGE_CONFIG = {
   ACADEMIC_YEAR: '2025 - 2026',
   PORTAL_DOMAIN: 'campusentry.in',
   OFFICIAL_EMAIL_DOMAIN: 'acetcbe.edu.in',
-  OFFICIAL_EMAIL_ERROR_MSG: 'Please use your official college email address.',
+  ALLOWED_DOMAINS: ['acetcbe.edu.in', 'college.edu'],
+  OFFICIAL_EMAIL_ERROR_MSG: 'Please use your official college email address (@acetcbe.edu.in or @college.edu).',
 
   // Email validation helper
   isCollegeEmail: (email) => {
     if (!email || typeof email !== 'string') return false;
-    return email.trim().toLowerCase().endsWith('@acetcbe.edu.in');
+    const lower = email.trim().toLowerCase();
+    return lower.endsWith('@acetcbe.edu.in') || lower.endsWith('@college.edu');
   },
+
+  // Academic Departments (for Student / Faculty profiles)
+  ACADEMIC_DEPARTMENTS: [
+    'Computer Science and Engineering (CSE)',
+    'Artificial Intelligence and Data Science (AI & DS)',
+    'Information Technology (IT)',
+    'Electronics and Communication Engineering (ECE)',
+    'Electrical and Electronics Engineering (EEE)',
+    'Mechanical Engineering (MECH)',
+    'Civil Engineering (CIVIL)',
+    'Mechatronics Engineering (MCT)',
+    'Science and Humanities (S&H)',
+    'Management Studies (MBA)'
+  ],
   
   // Campus Blocks & Infrastructure
   CAMPUS_BLOCKS: [

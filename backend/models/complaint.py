@@ -1,5 +1,14 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from extensions import db
+
+
+def _to_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 VALID_STATUSES = {'Submitted', 'Assigned', 'In Progress', 'Resolved', 'Closed', 'Reopened'}
 VALID_PRIORITIES = {'Low', 'Medium', 'High'}
@@ -33,8 +42,8 @@ class Complaint(db.Model):
     is_overdue = db.Column(db.Boolean, default=False, nullable=False, index=True)
 
     # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=_utcnow, index=True)
+    updated_at = db.Column(db.DateTime, default=_utcnow, onupdate=_utcnow)
     resolved_at = db.Column(db.DateTime, nullable=True)
     closed_at = db.Column(db.DateTime, nullable=True)
 
@@ -88,17 +97,19 @@ class Complaint(db.Model):
 
     def compute_and_set_sla_deadline(self, base_time=None):
         """Calculates sla_deadline from base_time or created_at."""
-        ref_time = base_time or self.created_at or datetime.utcnow()
+        ref_time = base_time if base_time is not None else (self.created_at if self.created_at is not None else datetime.now(timezone.utc))
+        ref_time = _to_utc(ref_time)
         hours = self.calculate_sla_hours()
         self.sla_deadline = ref_time + timedelta(hours=hours)
         return self.sla_deadline
 
     def get_remaining_seconds(self, now=None):
         """Returns remaining seconds until SLA deadline (can be negative if overdue)."""
-        if not self.sla_deadline:
+        if self.sla_deadline is None:
             return None
-        now_dt = now or datetime.utcnow()
-        return (self.sla_deadline - now_dt).total_seconds()
+        now_dt = _to_utc(now) if now is not None else datetime.now(timezone.utc)
+        deadline = _to_utc(self.sla_deadline)
+        return (deadline - now_dt).total_seconds()
 
     def get_current_escalation_level(self, now=None):
         """
@@ -111,13 +122,16 @@ class Complaint(db.Model):
         if self.status in {'Resolved', 'Closed'}:
             return 0
 
-        if not self.sla_deadline or not self.created_at:
+        if self.sla_deadline is None or self.created_at is None:
             return 0
 
-        now_dt = now or datetime.utcnow()
+        now_dt = _to_utc(now) if now is not None else datetime.now(timezone.utc)
+        created_at_dt = _to_utc(self.created_at)
+        deadline_dt = _to_utc(self.sla_deadline)
+
         total_duration_secs = self.calculate_sla_hours() * 3600
-        elapsed_secs = (now_dt - self.created_at).total_seconds()
-        remaining_secs = (self.sla_deadline - now_dt).total_seconds()
+        elapsed_secs = (now_dt - created_at_dt).total_seconds()
+        remaining_secs = (deadline_dt - now_dt).total_seconds()
 
         from models.system_setting import SystemSetting
         crit_mult = SystemSetting.get_setting_float('critical_multiplier', 2.0)
@@ -125,7 +139,7 @@ class Complaint(db.Model):
 
         if elapsed_secs > (crit_mult * total_duration_secs):
             return 3
-        if now_dt > self.sla_deadline:
+        if now_dt > deadline_dt:
             return 2
         if remaining_secs <= (app_pct * total_duration_secs) and remaining_secs > 0:
             return 1
@@ -135,10 +149,11 @@ class Complaint(db.Model):
         """Returns True if complaint is past SLA deadline and not Resolved/Closed."""
         if self.status in {'Resolved', 'Closed'}:
             return False
-        if not self.sla_deadline:
+        if self.sla_deadline is None:
             return False
-        now_dt = now or datetime.utcnow()
-        return now_dt > self.sla_deadline
+        now_dt = _to_utc(now) if now is not None else datetime.now(timezone.utc)
+        deadline_dt = _to_utc(self.sla_deadline)
+        return now_dt > deadline_dt
 
     def to_dict(self):
         dept_name = self.department.name if self.department else None
@@ -165,7 +180,7 @@ class Complaint(db.Model):
                 'phone': self.assignee.phone
             }
 
-        now_dt = datetime.utcnow()
+        now_dt = _utcnow()
         remaining_secs = self.get_remaining_seconds(now_dt)
         escalation_lvl = self.get_current_escalation_level(now_dt)
         overdue_bool = self.check_overdue(now_dt) if self.status not in {'Resolved', 'Closed'} else False

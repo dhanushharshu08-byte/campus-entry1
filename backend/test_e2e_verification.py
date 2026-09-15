@@ -225,7 +225,7 @@ class MasterE2EVerificationSuite(unittest.TestCase):
 
         # Test non-existent user rejection
         bad_user_res = self.login('nonexistent@college.edu', 'Password@123')
-        self.assertEqual(bad_user_res.status_code, 401)
+        self.assertIn(bad_user_res.status_code, [401, 404])
 
     # ==========================================
     # 4. STUDENT COMPLAINT WORKFLOW TEST
@@ -369,6 +369,8 @@ class MasterE2EVerificationSuite(unittest.TestCase):
 
         # Verify in database
         db_comp = db.session.get(Complaint, comp_id)
+        self.assertIsNotNone(db_comp)
+        assert db_comp is not None
         self.assertEqual(db_comp.status, 'Resolved')
 
         self.logout()

@@ -3,7 +3,7 @@ SLA & Automatic Escalation Service for CampuSentry Helpdesk.
 Manages SLA deadline calculations, background overdue detection,
 approaching warnings, SLA breaches, and critical multi-tier escalations.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from extensions import db
 from models.complaint import Complaint
 from models.escalation_log import EscalationLog
@@ -29,9 +29,15 @@ def get_configured_sla_hours(priority):
     defaults = {'High': 4, 'Medium': 24, 'Low': 72}
     return SystemSetting.get_setting_int(key, defaults.get(priority, 24))
 
+def _to_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
 def calculate_initial_sla(complaint, created_at=None):
     """Calculates and assigns initial sla_deadline to a complaint."""
-    base_time = created_at or complaint.created_at or datetime.utcnow()
+    base_time = created_at or complaint.created_at or datetime.now(timezone.utc)
+    base_time = _to_utc(base_time)
     hours = get_configured_sla_hours(complaint.priority)
     complaint.sla_deadline = base_time + timedelta(hours=hours)
     complaint.is_overdue = False
@@ -41,10 +47,12 @@ def recalculate_sla_on_priority_change(complaint):
     """Recalculates SLA deadline when priority changes on an active ticket."""
     if complaint.status in {'Resolved', 'Closed'}:
         return complaint.sla_deadline
-    base_time = complaint.created_at or datetime.utcnow()
+    base_time = complaint.created_at or datetime.now(timezone.utc)
+    base_time = _to_utc(base_time)
     hours = get_configured_sla_hours(complaint.priority)
     complaint.sla_deadline = base_time + timedelta(hours=hours)
-    complaint.is_overdue = datetime.utcnow() > complaint.sla_deadline
+    if complaint.sla_deadline is not None:
+        complaint.is_overdue = datetime.now(timezone.utc) > _to_utc(complaint.sla_deadline)
     return complaint.sla_deadline
 
 def evaluate_all_active_slas():
@@ -53,7 +61,7 @@ def evaluate_all_active_slas():
     Triggers Escalation Level 1 (Approaching), Level 2 (Breached), and Level 3 (Critical).
     Avoids duplicate escalation logs and notification spam.
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     active_complaints = Complaint.query.filter(
         Complaint.status.not_in(['Resolved', 'Closed'])
     ).all()
@@ -68,10 +76,13 @@ def evaluate_all_active_slas():
         if not comp.sla_deadline:
             calculate_initial_sla(comp)
 
+        comp_created_at = _to_utc(comp.created_at) if comp.created_at else None
+        comp_deadline = _to_utc(comp.sla_deadline) if comp.sla_deadline else None
+
         total_hours = get_configured_sla_hours(comp.priority)
         total_duration_secs = total_hours * 3600
-        elapsed_secs = (now - comp.created_at).total_seconds() if comp.created_at else 0
-        remaining_secs = (comp.sla_deadline - now).total_seconds()
+        elapsed_secs = (now - comp_created_at).total_seconds() if comp_created_at else 0
+        remaining_secs = (comp_deadline - now).total_seconds() if comp_deadline else 0
 
         # Check existing escalation logs for this complaint
         existing_levels = {
@@ -118,7 +129,7 @@ def evaluate_all_active_slas():
             emit_sla_warning(comp)
 
         # Level 2: SLA Breached (now > deadline)
-        if now > comp.sla_deadline:
+        if comp_deadline and now > comp_deadline:
             comp.is_overdue = True
 
             if 2 not in existing_levels:

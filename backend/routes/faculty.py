@@ -2,7 +2,7 @@
 Faculty Dashboard and Portal Routes for CampuSentry Helpdesk.
 Provides strictly isolated, real-time statistics and recent grievances for the logged-in faculty member.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Blueprint, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import or_
@@ -22,7 +22,7 @@ def get_faculty_dashboard():
     All data is computed dynamically from SQLite records.
     """
     user_id = current_user.id
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # Query faculty complaints
     query = Complaint.query.filter_by(created_by=user_id)
