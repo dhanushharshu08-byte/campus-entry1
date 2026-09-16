@@ -26,6 +26,12 @@ class TestSupabaseConnection(unittest.TestCase):
         self.pub_key = os.environ.get('SUPABASE_PUBLISHABLE_KEY')
         self.project_ref = os.environ.get('SUPABASE_PROJECT_REF')
 
+        if not self.url:
+            self.skipTest(
+                'Supabase environment variables not configured. '
+                'Set SUPABASE_URL to run these tests.'
+            )
+
     def test_01_environment_variables_loaded(self):
         """Verify Supabase environment variables are properly defined."""
         self.assertIsNotNone(self.url, "SUPABASE_URL must be defined")

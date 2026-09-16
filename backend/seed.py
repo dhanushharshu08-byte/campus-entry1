@@ -96,8 +96,6 @@ def seed_database():
 
         print("\n--- Seeding Demo Users ---")
         demo_emails = {u['email'] for u in DEMO_USERS_DATA}
-        User.query.filter(~User.email.in_(demo_emails)).delete(synchronize_session=False)
-        db.session.commit()
 
         for u_info in DEMO_USERS_DATA:
             existing_user = User.query.filter_by(email=u_info['email']).first()

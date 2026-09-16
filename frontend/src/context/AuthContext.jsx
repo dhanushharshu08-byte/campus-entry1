@@ -76,6 +76,27 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const register = async (userData) => {
+    setError(null);
+    try {
+      const res = await authApi.register(userData);
+      if (res.data?.success && res.data?.user) {
+        const registeredUser = res.data.user;
+        setUser(registeredUser);
+        initializeSocket(registeredUser);
+        return {
+          success: true,
+          user: registeredUser,
+          message: res.data.message || 'Registration successful. Welcome to CampuSentry!',
+        };
+      }
+      return { success: false, error: res.data?.message || 'Registration failed.' };
+    } catch (err) {
+      const msg = err.message || 'Registration failed.';
+      return { success: false, error: msg, errors: err.errors };
+    }
+  };
+
   const logout = async () => {
     try {
       await authApi.logout();
@@ -95,6 +116,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         error,
         login,
+        register,
         logout,
         refreshUser,
         getDashboardRoute,

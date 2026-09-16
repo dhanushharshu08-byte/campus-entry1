@@ -34,10 +34,13 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
 
     # Ensure upload & backup directories exist
-    os.makedirs(app.config['ISSUES_UPLOAD_FOLDER'], exist_ok=True)
-    os.makedirs(app.config['RESOLUTIONS_UPLOAD_FOLDER'], exist_ok=True)
-    backups_dir = os.path.join(app.config.get('BASE_DIR', os.path.abspath(os.path.dirname(__file__))), 'backups')
-    os.makedirs(backups_dir, exist_ok=True)
+    try:
+        os.makedirs(app.config['ISSUES_UPLOAD_FOLDER'], exist_ok=True)
+        os.makedirs(app.config['RESOLUTIONS_UPLOAD_FOLDER'], exist_ok=True)
+        backups_dir = '/tmp/backups' if os.environ.get('VERCEL') else os.path.join(app.config.get('BASE_DIR', os.path.abspath(os.path.dirname(__file__))), 'backups')
+        os.makedirs(backups_dir, exist_ok=True)
+    except OSError:
+        pass
 
     # Initialize extensions
     db.init_app(app)

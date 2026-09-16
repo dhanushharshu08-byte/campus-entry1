@@ -41,10 +41,13 @@ def list_maintenance_complaints():
     """
     query = Complaint.query
 
-    # Department Filter (Property of the Complaint)
+    # Department Filter: scope to user's department for specialist staff
     dept_id = request.args.get('department_id', type=int)
     if dept_id:
         query = query.filter(Complaint.department_id == dept_id)
+    elif current_user.department_id:
+        # Specialist staff only see their own department's complaints
+        query = query.filter(Complaint.department_id == current_user.department_id)
 
     # Status Filter
     status = request.args.get('status')
@@ -153,6 +156,13 @@ def get_maintenance_complaint_details(complaint_id):
     complaint = Complaint.query.get(complaint_id)
     if not complaint:
         return jsonify({"success": False, "message": "Complaint not found."}), 404
+
+    # Department isolation: specialist staff blocked from other departments
+    if current_user.department_id and complaint.department_id and current_user.department_id != complaint.department_id:
+        return jsonify({
+            "success": False,
+            "message": "Access forbidden. This complaint belongs to another maintenance department."
+        }), 403
 
     logs = StatusLog.query.filter_by(complaint_id=complaint.id).order_by(StatusLog.timestamp.asc()).all()
     comp_dict = complaint.to_dict()

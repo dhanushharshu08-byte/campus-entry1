@@ -4,17 +4,17 @@ import { useAuth } from '../context/AuthContext';
 import { authApi } from '../services/api';
 import { COLLEGE_CONFIG } from '../config/collegeConfig';
 import { CampuSentryShield } from '../components/brand/CollegeBrandLogo';
-import { 
-  User, 
-  Mail, 
-  Lock, 
-  Phone, 
-  CreditCard, 
-  Eye, 
-  EyeOff, 
-  AlertCircle, 
-  CheckCircle2, 
-  GraduationCap, 
+import {
+  User,
+  Mail,
+  Lock,
+  Phone,
+  CreditCard,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  CheckCircle2,
+  GraduationCap,
   School,
   Building2,
   Check,
@@ -23,8 +23,83 @@ import {
   ArrowRight
 } from 'lucide-react';
 
-const RegisterPage = () => {
-  const { user, getDashboardRoute } = useAuth();
+// Safe local error boundary specifically for the Registration page
+class RegisterErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Registration page error:', error, errorInfo);
+  }
+
+  handleRefresh = () => {
+    this.setState({ hasError: false });
+    window.location.reload();
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          className="register-page-container"
+          style={{
+            maxWidth: '520px',
+            margin: '3rem auto',
+            padding: '0 1rem',
+            textAlign: 'center',
+          }}
+        >
+          <div
+            className="card"
+            style={{
+              padding: '2.5rem 2rem',
+              borderRadius: '16px',
+              boxShadow: '0 10px 30px -5px rgba(15, 23, 42, 0.08)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+              <CampuSentryShield size={48} />
+            </div>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-slate-900)', marginBottom: '0.5rem' }}>
+              Registration Unavailable
+            </h2>
+            <p style={{ fontSize: '0.9rem', color: 'var(--color-slate-600)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+              Registration page could not be loaded. Please refresh and try again.
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={this.handleRefresh}
+                className="btn btn-primary"
+                style={{ padding: '0.65rem 1.25rem', fontSize: '0.875rem', fontWeight: 600 }}
+              >
+                Refresh Page
+              </button>
+              <Link
+                to="/"
+                className="btn btn-secondary"
+                style={{ padding: '0.65rem 1.25rem', fontSize: '0.875rem', fontWeight: 600 }}
+              >
+                Go to Home
+              </Link>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+const RegisterPageContent = () => {
+  const { user, register } = useAuth();
   const navigate = useNavigate();
 
   const [role, setRole] = useState('student');
@@ -44,13 +119,6 @@ const RegisterPage = () => {
   const [formError, setFormError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState([]);
   const [successMsg, setSuccessMsg] = useState(null);
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user && user.role) {
-      navigate(getDashboardRoute(user.role), { replace: true });
-    }
-  }, [user, navigate, getDashboardRoute]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -108,7 +176,9 @@ const RegisterPage = () => {
 
     // Client-side validations
     const errors = [];
-    if (!trimmedName) errors.push('Full name is required.');
+    if (!trimmedName) {
+      errors.push('Full name is required.');
+    }
     if (!trimmedEmail) {
       errors.push('Campus email is required.');
     } else if (!COLLEGE_CONFIG.isCollegeEmail(trimmedEmail)) {
@@ -119,7 +189,9 @@ const RegisterPage = () => {
     } else if (formData.password.length < 8) {
       errors.push('Password must be at least 8 characters long.');
     }
-    if (formData.password !== formData.confirmPassword) {
+    if (!formData.confirmPassword) {
+      errors.push('Please confirm your password.');
+    } else if (formData.password !== formData.confirmPassword) {
       errors.push('Passwords do not match. Please re-enter your password.');
     }
 
@@ -140,14 +212,18 @@ const RegisterPage = () => {
         phone: phone || undefined,
       };
 
-      const res = await authApi.register(payload);
-      if (res.data?.success) {
-        setSuccessMsg(`Registration successful! Account created for ${trimmedName}. Redirecting to login...`);
+      const result = await register(payload);
+      if (result.success) {
+        setSuccessMsg('Registration successful. Welcome to CampuSentry!');
         setTimeout(() => {
-          navigate('/login', { state: { registeredEmail: trimmedEmail } });
-        }, 1500);
+          navigate('/', { replace: true });
+        }, 1200);
       } else {
-        setFormError(res.data?.message || 'Registration failed.');
+        if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
+          setFieldErrors(result.errors);
+        } else {
+          setFormError(result.error || 'Registration failed.');
+        }
       }
     } catch (err) {
       if (err.errors && Array.isArray(err.errors) && err.errors.length > 0) {
@@ -161,20 +237,20 @@ const RegisterPage = () => {
   };
 
   return (
-    <div 
+    <div
       className="register-page-container"
-      style={{ 
-        maxWidth: '560px', 
-        margin: '1.5rem auto 3rem', 
+      style={{
+        maxWidth: '560px',
+        margin: '1.5rem auto 3rem',
         padding: '0 1rem',
         position: 'relative',
         zIndex: 2
       }}
     >
-      <div 
-        className="card" 
-        style={{ 
-          padding: '2.5rem 2rem', 
+      <div
+        className="card"
+        style={{
+          padding: '2.5rem 2rem',
           borderRadius: '16px',
           boxShadow: '0 10px 30px -5px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.03)'
         }}
@@ -193,12 +269,12 @@ const RegisterPage = () => {
         </div>
 
         {/* Quick Demo Autofill Bar */}
-        <div 
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            gap: '0.5rem', 
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
             marginBottom: '1.25rem',
             padding: '0.45rem 0.75rem',
             background: 'var(--color-brand-50)',
@@ -453,7 +529,7 @@ const RegisterPage = () => {
                 value={formData.email}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                style={{ 
+                style={{
                   paddingLeft: '2.5rem',
                   borderColor: formData.email && !isCollegeEmailValid ? 'var(--color-danger-600)' : undefined
                 }}
@@ -569,7 +645,7 @@ const RegisterPage = () => {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 disabled={isSubmitting}
-                style={{ 
+                style={{
                   paddingLeft: '2.5rem',
                   paddingRight: '2.5rem',
                   borderColor: formData.confirmPassword && !passwordsMatch ? 'var(--color-danger-600)' : undefined
@@ -620,11 +696,11 @@ const RegisterPage = () => {
           <button
             type="submit"
             className="btn btn-primary"
-            style={{ 
-              width: '100%', 
-              padding: '0.85rem', 
-              fontSize: '0.98rem', 
-              fontWeight: 700, 
+            style={{
+              width: '100%',
+              padding: '0.85rem',
+              fontSize: '0.98rem',
+              fontWeight: 700,
               marginBottom: '1.25rem',
               borderRadius: '10px',
               display: 'flex',
@@ -657,5 +733,11 @@ const RegisterPage = () => {
     </div>
   );
 };
+
+const RegisterPage = () => (
+  <RegisterErrorBoundary>
+    <RegisterPageContent />
+  </RegisterErrorBoundary>
+);
 
 export default RegisterPage;

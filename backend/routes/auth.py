@@ -94,9 +94,17 @@ def register():
 
         db.session.commit()
 
+        # Establish authenticated session for the newly registered user
+        user.last_login = datetime.now(timezone.utc)
+        login_user(user, remember=True)
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         return jsonify({
             "success": True,
-            "message": "Registration successful. You can now log in with your credentials.",
+            "message": "Registration successful. Welcome to CampuSentry!",
             "user": user.to_dict()
         }), 201
 

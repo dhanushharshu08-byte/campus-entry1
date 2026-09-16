@@ -18,6 +18,20 @@ def _get_database_uri() -> str:
         # Standardize postgres dialect for SQLAlchemy
         if uri.startswith('postgres://'):
             uri = uri.replace('postgres://', 'postgresql://', 1)
+        # Handle relative sqlite path (e.g. sqlite:///campus_helpdesk.db)
+        if uri.startswith('sqlite:///') and not uri.startswith('sqlite:////') and not (len(uri) > 11 and uri[10] == ':'):
+            rel_name = uri.replace('sqlite:///', '')
+            if os.environ.get('VERCEL'):
+                tmp_db = f'/tmp/{rel_name}'
+                src_db = os.path.join(BASE_DIR, rel_name)
+                if not os.path.exists(tmp_db) and os.path.exists(src_db):
+                    import shutil
+                    try:
+                        shutil.copy2(src_db, tmp_db)
+                    except Exception:
+                        pass
+                return f"sqlite:///{tmp_db}"
+            return f"sqlite:///{os.path.join(BASE_DIR, rel_name).replace('\\', '/')}"
         return uri
     
     # Handle Vercel serverless environment (writable in /tmp)

@@ -235,7 +235,7 @@ class FinalCollegeDemoTestCase(unittest.TestCase):
         # Invalid Login
         bad_login = self.client.post('/api/auth/login', json={"email": "student@college.edu", "password": "WrongPassword"})
         self.assertEqual(bad_login.status_code, 401)
-        self.assertIn("Invalid", bad_login.get_json()['message'])
+        self.assertIn("Incorrect", bad_login.get_json()['message'])
         print(" [+] Step 12: Failure handling verified! Invalid credentials cleanly rejected with HTTP 401")
 
         print("\n=======================================================")

@@ -214,6 +214,11 @@ class Prompt11MaintenanceArchitectureTestSuite(unittest.TestCase):
         self.assertEqual(len(all_depts_res.get_json()['complaints']), 2)
 
         # 18. Maintenance resolves an Electrical complaint
+        # Must accept first (transition Assigned -> In Progress), then resolve (In Progress -> Resolved)
+        accept_res = self.client.patch(f'/api/maintenance/complaints/{elec_comp_id}/accept')
+        self.assertEqual(accept_res.status_code, 200)
+        self.assertEqual(accept_res.get_json()['complaint']['status'], 'In Progress')
+
         resolve_res = self.client.patch(f'/api/maintenance/complaints/{elec_comp_id}/resolve', data={
             'resolution_remarks': 'Replaced ballast and fitted new LED tube.'
         })
