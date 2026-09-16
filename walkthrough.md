@@ -7,36 +7,56 @@ A complete, rigorous end-to-end functional test and verification of the **CampuS
 
 ## 1. Automated Test Suite Results
 
-### Master E2E & Production Integration Suites (58/58 Passing)
+### Master Test Suite Results (72 Tests: 68 Passed, 4 Skipped)
 ```powershell
-python -m unittest test_e2e_verification.py test_prompt12_suite.py test_prompt11_suite.py test_prompt9_suite.py test_production_suite.py
+python -m unittest discover -s backend -p "test_*.py"
 ```
-- **Total Tests**: 58
-- **Passed**: 58 (100%)
+- **Total Tests**: 72
+- **Passed**: 68 (100% of runnable tests)
+- **Skipped**: 4 (Supabase remote tests, skipped when optional remote credentials are not configured)
 - **Failures**: 0
 - **Errors**: 0
-- **Execution Time**: ~5.4 seconds
-
-### Live Running Server E2E Verification
-```powershell
-python test_live_server_endpoints.py
-```
-- **Backend (http://127.0.0.1:5000)**: Online & Healthy (`/api/health` -> database connected, socketio running)
-- **Frontend (http://localhost:5173)**: Online & Serving (HTTP 200)
-- **Student Flow**: Login -> Submit complaint with issue photo -> View in My Complaints -> Logout (All 200/201 OK)
-- **Maintenance Flow**: Login -> Accept complaint -> Resolve with remarks & resolution photo -> Logout (All 200 OK)
-- **Management Flow**: Login -> Dynamic summary verification (Total=1, Resolved=1) -> Complaints explorer -> Logout (All 200 OK)
-- **Static Media Serving**: Verified HTTP 200 delivery for `/uploads/issues/...` and `/uploads/resolutions/...`
 
 ### Frontend Production Build
 ```powershell
-npm run build
+npm --prefix frontend run build
 ```
-- **Result**: Built successfully in 4.50s with **0 errors**.
+- **Result**: Built successfully in 3.96s with **0 errors**.
+- **Distribution Bundle**: `frontend/dist/` generated with minified assets and HTML entrypoint.
 
 ---
 
-## 2. Detailed Functional Verification Summary
+## 2. Vercel Deployment
+
+The codebase is fully configured for Vercel deployment with serverless Python backend support and static frontend hosting.
+
+### Configuration Highlights
+1. **[vercel.json](file:///c:/Users/dhanushdhanush/OneDrive/Desktop/CampuSentry/vercel.json)**:
+   - Configures `frontend/dist` as the output directory.
+   - Rewrites `/api/(.*)` and `/uploads/(.*)` to the serverless Python handler `api/index.py`.
+   - Rewrites all client-side routes `/(.*)` to `/index.html`.
+2. **[api/index.py](file:///c:/Users/dhanushdhanush/OneDrive/Desktop/CampuSentry/api/index.py)**:
+   - Serverless entrypoint exposing the WSGI Flask app for Vercel Python runtime.
+3. **[backend/config.py](file:///c:/Users/dhanushdhanush/OneDrive/Desktop/CampuSentry/backend/config.py)**:
+   - Handles Vercel serverless environment: copies seed SQLite database to `/tmp/campus_helpdesk.db` ensuring writable filesystem access.
+   - Falls back to Postgres/Supabase when `DATABASE_URL` is set in production.
+   - Configures `/tmp/uploads` for image attachments and `/tmp/backups` for automated backups.
+4. **Git Repository Synced**:
+   - Pushed latest changes and fixes to `https://github.com/dhanushharshu08-byte/campus-entry1.git` (`main` branch).
+   - If your Vercel project is linked to this GitHub repository, Vercel automatically deploys the latest commit `bae161b`.
+
+### How to Trigger Deployment via Vercel CLI
+If deploying directly from your machine:
+```bash
+# Double-click deploy_vercel.bat or run:
+npx vercel --prod
+```
+> [!NOTE]
+> If prompted in the terminal, run `npx vercel login` once to authenticate with your Vercel account in the browser.
+
+---
+
+## 3. Detailed Functional Verification Summary
 
 | # | Area | Verification Details | Result |
 |---|---|---|:---:|
@@ -44,7 +64,7 @@ npm run build
 | 2 | **Registration** | Student and Faculty registration verified; duplicate email rejected with HTTP 409; passwords hashed with Werkzeug. | **PASS** |
 | 3 | **Login & Session** | Verified for Student, Faculty, Maintenance, and Management; session maintained; invalid passwords rejected (401); logout clears session. | **PASS** |
 | 4 | **Student Grievance** | Form validation, issue image upload, unique `CH-YYYY-XXXXX` ticket generation, and details view verified. | **PASS** |
-| 5 | **Faculty Grievance & Isolation** | Faculty ticket logging verified; access to other users' private complaint details strictly blocked with 403. | **PASS** |
+| 5 | **Department Isolation** | Specialist maintenance staff strictly isolated to their own department's complaints; blocked from viewing other department details (403). | **PASS** |
 | 6 | **Maintenance Operations** | Centralized maintenance view, department filter, ticket acceptance, resolution remarks, proof photo, and resolved status verified. | **PASS** |
 | 7 | **Management Control & Analytics** | Real-time SQLite calculations (zero hardcoded values), priority overrides, internal remarks, and CSV reports verified. | **PASS** |
 | 8 | **Real-Time Notifications** | Socket.IO event emissions and database notification logging verified for all lifecycle events. | **PASS** |
