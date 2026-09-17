@@ -11,8 +11,8 @@ DEPARTMENTS_DATA = [
     {"name": "Electrical", "description": "Campus electrical infrastructure, power systems, lighting, and labs"},
     {"name": "Plumbing", "description": "Water supply, sanitation fixtures, washrooms, and piping"},
     {"name": "Civil", "description": "Masonry, structural repairs, painting, and classroom fixtures"},
-    {"name": "Housekeeping", "description": "Campus hygiene, waste management, and custodial services"},
-    {"name": "Furniture", "description": "Desks, chairs, podiums, lab benches, and carpentry"},
+    {"name": "Carpentry", "description": "Desks, benches, podiums, lab furniture, doors, and cupboards"},
+    {"name": "Cleaning", "description": "Classroom housekeeping, sanitation, washrooms, and waste disposal"},
     {"name": "IT / Network", "description": "Wi-Fi, LAN, server rooms, smart classrooms, and hardware"},
     {"name": "Other", "description": "General campus facilities and miscellaneous maintenance"}
 ]

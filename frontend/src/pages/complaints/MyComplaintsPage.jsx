@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { complaintsApi, departmentsApi } from '../../services/api';
+import { COLLEGE_CONFIG } from '../../config/collegeConfig';
 import StatusBadge from '../../components/StatusBadge';
 import { 
   PlusCircle, 
@@ -18,7 +19,13 @@ import {
 
 const MyComplaintsPage = () => {
   const [complaints, setComplaints] = useState([]);
-  const [departments, setDepartments] = useState([]);
+  const [departments, setDepartments] = useState(() => 
+    (COLLEGE_CONFIG.DEPARTMENTS || []).map(d => ({
+      id: d.id,
+      name: d.name,
+      description: d.description
+    }))
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -32,17 +39,20 @@ const MyComplaintsPage = () => {
 
   // Load departments
   useEffect(() => {
+    let isMounted = true;
     const fetchDepts = async () => {
       try {
         const res = await departmentsApi.list();
-        if (res.data?.success && res.data?.departments) {
-          setDepartments(res.data.departments);
+        const depts = res.data?.departments || (Array.isArray(res.data) ? res.data : []);
+        if (isMounted && Array.isArray(depts) && depts.length > 0) {
+          setDepartments(depts);
         }
       } catch (err) {
         console.warn('Error fetching departments filter:', err);
       }
     };
     fetchDepts();
+    return () => { isMounted = false; };
   }, []);
 
   // Fetch complaints with filters

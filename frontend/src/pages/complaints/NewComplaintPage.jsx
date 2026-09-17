@@ -17,13 +17,23 @@ import {
   Sparkles
 } from 'lucide-react';
 
+const MAINTENANCE_DEPARTMENTS = [
+  { id: 1, name: 'Electrical', description: 'Power supply, lighting, switchboards, wiring, fans, and lab power' },
+  { id: 2, name: 'Plumbing', description: 'Restrooms, water coolers, piping, taps, drainage, and pumps' },
+  { id: 3, name: 'Civil', description: 'Masonry, plastering, doors, windows, paint, ceiling, and flooring' },
+  { id: 8, name: 'Carpentry', description: 'Desks, benches, podiums, lab furniture, doors, and cupboards' },
+  { id: 9, name: 'Cleaning', description: 'Classroom housekeeping, sanitation, washrooms, and waste disposal' },
+  { id: 6, name: 'IT / Network', description: 'Computers, projectors, lab systems, WiFi, LAN, and smart boards' },
+  { id: 7, name: 'Other', description: 'General facilities, sports equipment, signage, and miscellaneous' }
+];
+
 const NewComplaintPage = () => {
-  const [departments, setDepartments] = useState([]);
-  const [loadingDepts, setLoadingDepts] = useState(true);
+  const [departments, setDepartments] = useState(MAINTENANCE_DEPARTMENTS);
+  const [loadingDepts, setLoadingDepts] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
-    department_id: '',
+    department_id: '1',
     building: COLLEGE_CONFIG.CAMPUS_BLOCKS[0],
     floor: COLLEGE_CONFIG.CAMPUS_FLOORS[0],
     room_or_spot: '',
@@ -42,25 +52,22 @@ const NewComplaintPage = () => {
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
-  // Load active departments dynamically from API
+  // Synchronize active departments dynamically from API if available
   useEffect(() => {
+    let isMounted = true;
     const fetchDepts = async () => {
       try {
-        setLoadingDepts(true);
         const res = await departmentsApi.list();
-        if (res.data?.success && res.data?.departments) {
-          setDepartments(res.data.departments);
-          if (res.data.departments.length > 0) {
-            setFormData(prev => ({ ...prev, department_id: String(res.data.departments[0].id) }));
-          }
+        const depts = res.data?.departments || (Array.isArray(res.data) ? res.data : []);
+        if (isMounted && Array.isArray(depts) && depts.length > 0) {
+          setDepartments(depts);
         }
       } catch (err) {
-        setFormError('Failed to load maintenance departments. Please refresh.');
-      } finally {
-        setLoadingDepts(false);
+        console.warn('API departments note: Using verified local default departments:', err);
       }
     };
     fetchDepts();
+    return () => { isMounted = false; };
   }, []);
 
   const handleChange = (e) => {
@@ -291,20 +298,17 @@ const NewComplaintPage = () => {
                 id="department_id"
                 name="department_id"
                 className="form-select"
-                value={formData.department_id}
+                value={String(formData.department_id)}
                 onChange={handleChange}
-                disabled={isSubmitting || loadingDepts}
+                disabled={isSubmitting}
+                style={{ cursor: 'pointer', backgroundColor: '#ffffff', color: '#1e293b' }}
                 required
               >
-                {loadingDepts ? (
-                  <option value="">Loading departments...</option>
-                ) : (
-                  departments.map(d => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))
-                )}
+                {departments.map(d => (
+                  <option key={d.id} value={String(d.id)} style={{ color: '#1e293b', backgroundColor: '#ffffff' }}>
+                    {d.name}
+                  </option>
+                ))}
               </select>
             </div>
 

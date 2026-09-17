@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { managementApi, departmentsApi } from '../../services/api';
+import { COLLEGE_CONFIG } from '../../config/collegeConfig';
 import StatusBadge from '../../components/StatusBadge';
 import { 
   FileText, 
@@ -17,7 +18,13 @@ import {
 
 const ManagementComplaints = () => {
   const [complaints, setComplaints] = useState([]);
-  const [departments, setDepartments] = useState([]);
+  const [departments, setDepartments] = useState(() => 
+    (COLLEGE_CONFIG.DEPARTMENTS || []).map(d => ({
+      id: d.id,
+      name: d.name,
+      description: d.description
+    }))
+  );
   const [pagination, setPagination] = useState({ page: 1, limit: 15, total: 0, total_pages: 1 });
   const [loading, setLoading] = useState(true);
 
@@ -32,7 +39,8 @@ const ManagementComplaints = () => {
   const fetchDepartments = async () => {
     try {
       const res = await departmentsApi.list();
-      if (res.data?.success) setDepartments(res.data.departments || []);
+      const depts = res.data?.departments || (Array.isArray(res.data) ? res.data : []);
+      if (Array.isArray(depts) && depts.length > 0) setDepartments(depts);
     } catch (err) {
       console.warn('Failed to load departments:', err);
     }

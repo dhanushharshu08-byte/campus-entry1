@@ -74,12 +74,13 @@ export const COLLEGE_CONFIG = {
 
   // Maintenance Departments
   DEPARTMENTS: [
-    { id: 'electrical', name: 'Electrical', code: 'ELEC', description: 'Power supply, lighting, switchboards, wiring, fans, and lab power' },
-    { id: 'plumbing', name: 'Plumbing', code: 'PLUMB', description: 'Restrooms, water coolers, piping, taps, drainage, and pumps' },
-    { id: 'civil', name: 'Civil', code: 'CIVIL', description: 'Masonry, plastering, doors, windows, paint, ceiling, and flooring' },
-    { id: 'carpentry', name: 'Carpentry', code: 'CARP', description: 'Desks, benches, podiums, lab furniture, doors, and cupboards' },
-    { id: 'cleaning', name: 'Cleaning', code: 'CLEAN', description: 'Classroom housekeeping, sanitation, washrooms, and waste disposal' },
-    { id: 'other', name: 'Other', code: 'OTHER', description: 'General facilities, sports equipment, signage, and miscellaneous' }
+    { id: 1, name: 'Electrical', code: 'ELEC', description: 'Power supply, lighting, switchboards, wiring, fans, and lab power' },
+    { id: 2, name: 'Plumbing', code: 'PLUMB', description: 'Restrooms, water coolers, piping, taps, drainage, and pumps' },
+    { id: 3, name: 'Civil', code: 'CIVIL', description: 'Masonry, plastering, doors, windows, paint, ceiling, and flooring' },
+    { id: 8, name: 'Carpentry', code: 'CARP', description: 'Desks, benches, podiums, lab furniture, doors, and cupboards' },
+    { id: 9, name: 'Cleaning', code: 'CLEAN', description: 'Classroom housekeeping, sanitation, washrooms, and waste disposal' },
+    { id: 6, name: 'IT / Network', code: 'ITNET', description: 'Computers, projectors, lab systems, WiFi, LAN, and smart boards' },
+    { id: 7, name: 'Other', code: 'OTHER', description: 'General facilities, sports equipment, signage, and miscellaneous' }
   ]
 };
 
