@@ -92,6 +92,16 @@ def register():
             user_id=user.id
         )
 
+        # Create instant welcome & email confirmation notification
+        from models.notification import Notification
+        welcome_notif = Notification(
+            user_id=user.id,
+            title="Institutional Account Confirmed",
+            message=f"Welcome {user.name}! Your official college email ({user.email}) has been confirmed and your account is active.",
+            type="info"
+        )
+        db.session.add(welcome_notif)
+
         db.session.commit()
 
         # Establish authenticated session for the newly registered user
@@ -104,7 +114,8 @@ def register():
 
         return jsonify({
             "success": True,
-            "message": "Registration successful. Welcome to CampuSentry!",
+            "message": "Registration successful! Your official college account has been confirmed.",
+            "email_confirmed": True,
             "user": user.to_dict()
         }), 201
 

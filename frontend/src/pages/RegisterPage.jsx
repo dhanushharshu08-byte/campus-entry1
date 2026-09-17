@@ -214,10 +214,11 @@ const RegisterPageContent = () => {
 
       const result = await register(payload);
       if (result.success) {
-        setSuccessMsg('Registration successful. Welcome to CampuSentry!');
+        setSuccessMsg('Registration successful! Redirecting to your dashboard...');
+        const targetRoute = result.redirect || (role === 'faculty' ? '/faculty/dashboard' : '/student/dashboard');
         setTimeout(() => {
-          navigate('/', { replace: true });
-        }, 1200);
+          navigate(targetRoute, { replace: true });
+        }, 1000);
       } else {
         if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
           setFieldErrors(result.errors);

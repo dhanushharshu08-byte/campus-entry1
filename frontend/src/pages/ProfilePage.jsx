@@ -2,17 +2,17 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../services/api';
 import { COLLEGE_CONFIG } from '../config/collegeConfig';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  Shield, 
-  CheckCircle2, 
-  AlertCircle, 
-  Lock, 
-  Save, 
-  KeyRound, 
-  Eye, 
+import {
+  User,
+  Mail,
+  Phone,
+  Shield,
+  CheckCircle2,
+  AlertCircle,
+  Lock,
+  Save,
+  KeyRound,
+  Eye,
   EyeOff,
   GraduationCap,
   School,

@@ -20,7 +20,15 @@ export const getDashboardRoute = (role) => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  // Hydrate user from localStorage on initial render for instant resilience
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('campusentry_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -30,14 +38,27 @@ export const AuthProvider = ({ children }) => {
       const res = await authApi.getCurrentUser();
       if (res.data?.success && res.data?.user) {
         setUser(res.data.user);
+        try {
+          localStorage.setItem('campusentry_user', JSON.stringify(res.data.user));
+        } catch {
+          // localStorage write failure ignore
+        }
         initializeSocket(res.data.user);
         return res.data.user;
       } else {
         setUser(null);
+        try {
+          localStorage.removeItem('campusentry_user');
+        } catch {}
         return null;
       }
     } catch (err) {
-      setUser(null);
+      if (err.status === 401) {
+        setUser(null);
+        try {
+          localStorage.removeItem('campusentry_user');
+        } catch {}
+      }
       return null;
     } finally {
       setLoading(false);
@@ -67,6 +88,9 @@ export const AuthProvider = ({ children }) => {
       const res = await authApi.login(credentials);
       const loggedUser = res.data.user;
       setUser(loggedUser);
+      try {
+        localStorage.setItem('campusentry_user', JSON.stringify(loggedUser));
+      } catch {}
       initializeSocket(loggedUser);
       return { success: true, user: loggedUser, redirect: getDashboardRoute(loggedUser.role) };
     } catch (err) {
@@ -83,10 +107,14 @@ export const AuthProvider = ({ children }) => {
       if (res.data?.success && res.data?.user) {
         const registeredUser = res.data.user;
         setUser(registeredUser);
+        try {
+          localStorage.setItem('campusentry_user', JSON.stringify(registeredUser));
+        } catch {}
         initializeSocket(registeredUser);
         return {
           success: true,
           user: registeredUser,
+          redirect: getDashboardRoute(registeredUser.role),
           message: res.data.message || 'Registration successful. Welcome to CampuSentry!',
         };
       }
@@ -104,6 +132,9 @@ export const AuthProvider = ({ children }) => {
       console.warn('Logout error:', err);
     } finally {
       setUser(null);
+      try {
+        localStorage.removeItem('campusentry_user');
+      } catch {}
       disconnectSocket();
     }
   };

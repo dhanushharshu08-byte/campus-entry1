@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, getDashboardRoute } from '../context/AuthContext';
 import { COLLEGE_CONFIG } from '../config/collegeConfig';
 import { CampuSentryShield } from '../components/brand/CollegeBrandLogo';
 import { 
@@ -25,11 +25,17 @@ const LoginPage = () => {
   const [formError, setFormError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
-  const { login } = useAuth();
+  const { user, isAuthenticated, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const fromPath = location.state?.from?.pathname;
+
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      navigate(fromPath || getDashboardRoute(user.role), { replace: true });
+    }
+  }, [isAuthenticated, user, navigate, fromPath]);
 
   React.useEffect(() => {
     if (location.state?.registeredEmail) {

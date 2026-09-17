@@ -57,10 +57,13 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Session & Cookie Security
+    _is_prod = bool(os.environ.get('VERCEL') or os.environ.get('FLASK_ENV') == 'production')
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
-    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = _is_prod or (os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() == 'true')
     REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SECURE = _is_prod or (os.environ.get('REMEMBER_COOKIE_SECURE', 'false').lower() == 'true')
+    REMEMBER_COOKIE_SAMESITE = 'Lax'
     REMEMBER_COOKIE_DURATION = timedelta(days=7)
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
     
@@ -89,4 +92,12 @@ class Config:
     
     # Official College Email Configuration
     OFFICIAL_COLLEGE_EMAIL_DOMAIN = os.environ.get('OFFICIAL_COLLEGE_EMAIL_DOMAIN', 'acetcbe.edu.in')
+
+    # Supabase Configuration
+    SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://jxjfyrodyaellwnhhauy.supabase.co')
+    SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4amZ5cm9keWFlbGx3bmhoYXV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMjExMzgsImV4cCI6MjEwNDU5NzEzOH0.Mkq_i-GaGjDoLq0QbfEpn1dJn6C20mBrOj2sV2-fRO0')
+    SUPABASE_PROJECT_REF = os.environ.get('SUPABASE_PROJECT_REF', 'jxjfyrodyaellwnhhauy')
+    SUPABASE_PUBLISHABLE_KEY = os.environ.get('SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_ryoCMyv6rSQ87ewm7iGyRA_SCtXM0Vu')
+    SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
+
 
