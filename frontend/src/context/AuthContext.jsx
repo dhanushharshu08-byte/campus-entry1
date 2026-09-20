@@ -40,6 +40,9 @@ export const AuthProvider = ({ children }) => {
         setUser(res.data.user);
         try {
           localStorage.setItem('campusentry_user', JSON.stringify(res.data.user));
+          if (res.data?.token) {
+            localStorage.setItem('campusentry_token', res.data.token);
+          }
         } catch {
           // localStorage write failure ignore
         }
@@ -49,6 +52,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         try {
           localStorage.removeItem('campusentry_user');
+          localStorage.removeItem('campusentry_token');
         } catch {}
         return null;
       }
@@ -57,6 +61,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         try {
           localStorage.removeItem('campusentry_user');
+          localStorage.removeItem('campusentry_token');
         } catch {}
       }
       return null;
@@ -84,11 +89,12 @@ export const AuthProvider = ({ children }) => {
       };
     }
 
-    // Clear any stale session before attempting login so an old cached
-    // role (e.g. student) does not trigger an immediate redirect away
-    // from the login page before the new login response arrives.
+    // Clear any stale session before attempting login
     setUser(null);
-    try { localStorage.removeItem('campusentry_user'); } catch {}
+    try {
+      localStorage.removeItem('campusentry_user');
+      localStorage.removeItem('campusentry_token');
+    } catch {}
 
     try {
       const res = await authApi.login(credentials);
@@ -96,6 +102,9 @@ export const AuthProvider = ({ children }) => {
       setUser(loggedUser);
       try {
         localStorage.setItem('campusentry_user', JSON.stringify(loggedUser));
+        if (res.data?.token) {
+          localStorage.setItem('campusentry_token', res.data.token);
+        }
       } catch {}
       initializeSocket(loggedUser);
       return { success: true, user: loggedUser, redirect: getDashboardRoute(loggedUser.role) };
@@ -115,6 +124,9 @@ export const AuthProvider = ({ children }) => {
         setUser(registeredUser);
         try {
           localStorage.setItem('campusentry_user', JSON.stringify(registeredUser));
+          if (res.data?.token) {
+            localStorage.setItem('campusentry_token', res.data.token);
+          }
         } catch {}
         initializeSocket(registeredUser);
         return {
@@ -140,6 +152,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       try {
         localStorage.removeItem('campusentry_user');
+        localStorage.removeItem('campusentry_token');
       } catch {}
       disconnectSocket();
     }

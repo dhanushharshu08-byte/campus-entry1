@@ -1,7 +1,7 @@
 from functools import wraps
 from typing import Callable, Any
-from flask import jsonify
-from flask_login import current_user
+from flask import jsonify, request
+from flask_login import current_user, login_user
 
 def role_required(*roles: str) -> Callable:
     """
@@ -15,6 +15,17 @@ def role_required(*roles: str) -> Callable:
     def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(f)
         def decorated_function(*args: Any, **kwargs: Any) -> Any:
+            # If not authenticated via session cookie, attempt token authentication fallback
+            if not current_user.is_authenticated:
+                from models.user import User
+                auth_header = request.headers.get('Authorization') or request.headers.get('X-Auth-Token') or request.headers.get('X-Session-Token')
+                if auth_header:
+                    token = auth_header.replace('Bearer ', '', 1).strip() if auth_header.startswith('Bearer ') else auth_header.strip()
+                    if token:
+                        user = User.verify_auth_token(token)
+                        if user and user.is_active:
+                            login_user(user, remember=True)
+
             # Check authentication
             if not current_user.is_authenticated:
                 return jsonify({

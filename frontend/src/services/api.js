@@ -9,6 +9,23 @@ const api = axios.create({
   timeout: 20000,
 });
 
+// Request interceptor to attach persistent auth token
+api.interceptors.request.use(
+  (config) => {
+    try {
+      const token = localStorage.getItem('campusentry_token');
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+        config.headers['X-Auth-Token'] = token;
+      }
+    } catch {
+      // ignore localStorage read issues
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // Response interceptor for unified error formatting
 api.interceptors.response.use(
   (response) => response,

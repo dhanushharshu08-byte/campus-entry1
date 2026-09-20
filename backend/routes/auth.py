@@ -127,10 +127,12 @@ def register():
         except Exception:
             db.session.rollback()
 
+        token = user.generate_auth_token()
         return jsonify({
             "success": True,
             "message": "Registration successful! Your official college account has been confirmed.",
             "email_confirmed": True,
+            "token": token,
             "user": user.to_dict()
         }), 201
 
@@ -360,9 +362,11 @@ def login():
     except Exception:
         db.session.rollback()
 
+    token = user.generate_auth_token()
     return jsonify({
         "success": True,
         "message": "Login successful",
+        "token": token,
         "user": user.to_dict()
     }), 200
 
@@ -397,8 +401,10 @@ def logout():
 def get_current_user():
     """Returns profile of current authenticated user."""
     if current_user.is_authenticated:
+        token = current_user.generate_auth_token()
         return jsonify({
             "success": True,
+            "token": token,
             "user": current_user.to_dict()
         }), 200
 

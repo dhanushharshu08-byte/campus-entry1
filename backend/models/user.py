@@ -98,6 +98,51 @@ class User(UserMixin, db.Model):
             'last_login': self.last_login.isoformat() if self.last_login else None
         }
 
+    def generate_auth_token(self, expires_in=604800):
+        """Generates a secure timed token (default 7 days / 604800s)."""
+        from itsdangerous import URLSafeTimedSerializer
+        from flask import current_app
+        try:
+            secret = current_app.config.get('SECRET_KEY', 'campus_sentry_secure_production_secret_key_2026_acetcbe')
+        except Exception:
+            secret = 'campus_sentry_secure_production_secret_key_2026_acetcbe'
+        s = URLSafeTimedSerializer(secret, salt='campusentry-auth-token-v1')
+        return s.dumps({
+            'user_id': self.id,
+            'email': self.email,
+            'role': self.role,
+            'name': self.name
+        })
+
+    @staticmethod
+    def verify_auth_token(token, max_age=604800):
+        """Verifies a timed auth token and returns the corresponding User."""
+        if not token:
+            return None
+        from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired, BadTimeSignature
+        from flask import current_app
+        try:
+            secret = current_app.config.get('SECRET_KEY', 'campus_sentry_secure_production_secret_key_2026_acetcbe')
+        except Exception:
+            secret = 'campus_sentry_secure_production_secret_key_2026_acetcbe'
+        s = URLSafeTimedSerializer(secret, salt='campusentry-auth-token-v1')
+        try:
+            data = s.loads(token, max_age=max_age)
+            user_id = data.get('user_id')
+            if user_id:
+                user = db.session.get(User, int(user_id))
+                if user and user.is_active:
+                    return user
+            # Fallback by email
+            email = data.get('email')
+            if email:
+                user = User.query.filter(db.func.lower(User.email) == str(email).lower()).first()
+                if user and user.is_active:
+                    return user
+            return None
+        except (SignatureExpired, BadTimeSignature, BadSignature, Exception):
+            return None
+
     def __repr__(self):
         return f"<User {self.email} ({self.role})>"
 
@@ -110,3 +155,22 @@ def load_user(user_id):
         return None
     except (ValueError, TypeError):
         return None
+
+@login_manager.request_loader
+def load_user_from_request(req):
+    """Fallback authentication loader checking Bearer / X-Auth-Token headers."""
+    auth_header = req.headers.get('Authorization')
+    if auth_header:
+        token = auth_header.replace('Bearer ', '', 1).strip() if auth_header.startswith('Bearer ') else auth_header.strip()
+        if token:
+            user = User.verify_auth_token(token)
+            if user and user.is_active:
+                return user
+
+    x_token = req.headers.get('X-Auth-Token') or req.headers.get('X-Session-Token')
+    if x_token:
+        user = User.verify_auth_token(x_token.strip())
+        if user and user.is_active:
+            return user
+
+    return None
