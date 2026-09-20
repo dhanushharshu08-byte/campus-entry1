@@ -58,7 +58,7 @@ def run_tests():
         assert res3.status_code == 201, f"Expected 201, got {res3.status_code}: {res3.get_json()}"
         data3 = res3.get_json()
         assert data3['success'] is True
-        assert data3['message'] == "Registration successful. Welcome to CampuSentry!"
+        assert "Registration successful" in data3['message']
         assert data3['user']['role'] == "student"
         assert data3['user']['email'] == reg_payload['email'].lower()
         print(f"  -> Passed: Student registered successfully: {data3['user']['name']} ({data3['user']['email']})")

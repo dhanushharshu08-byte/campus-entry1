@@ -84,6 +84,12 @@ export const AuthProvider = ({ children }) => {
       };
     }
 
+    // Clear any stale session before attempting login so an old cached
+    // role (e.g. student) does not trigger an immediate redirect away
+    // from the login page before the new login response arrives.
+    setUser(null);
+    try { localStorage.removeItem('campusentry_user'); } catch {}
+
     try {
       const res = await authApi.login(credentials);
       const loggedUser = res.data.user;

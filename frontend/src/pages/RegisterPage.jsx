@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { authApi } from '../services/api';
+import { useAuth, getDashboardRoute } from '../context/AuthContext';
 import { COLLEGE_CONFIG } from '../config/collegeConfig';
 import { CampuSentryShield } from '../components/brand/CollegeBrandLogo';
 import {
@@ -16,6 +15,8 @@ import {
   CheckCircle2,
   GraduationCap,
   School,
+  Wrench,
+  ShieldCheck,
   Building2,
   Check,
   X,
@@ -30,7 +31,7 @@ class RegisterErrorBoundary extends React.Component {
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError() {
     return { hasError: true };
   }
 
@@ -99,7 +100,7 @@ class RegisterErrorBoundary extends React.Component {
 }
 
 const RegisterPageContent = () => {
-  const { user, register } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const [role, setRole] = useState('student');
@@ -147,7 +148,7 @@ const RegisterPageContent = () => {
         password: 'Password@123',
         confirmPassword: 'Password@123',
       });
-    } else {
+    } else if (targetRole === 'faculty') {
       setFormData({
         name: 'Dr. Ramesh Kumar',
         department: 'Electronics and Communication Engineering (ECE)',
@@ -160,6 +161,30 @@ const RegisterPageContent = () => {
     }
     setFormError(null);
     setFieldErrors([]);
+  };
+
+  const getRoleTitle = () => {
+    switch (role) {
+      case 'student': return 'Student';
+      case 'faculty': return 'Faculty';
+      default: return 'Account';
+    }
+  };
+
+  const getIdLabel = () => {
+    switch (role) {
+      case 'student': return 'Student Register / Roll Number';
+      case 'faculty': return 'Faculty ID / Employee Code';
+      default: return 'ID / Code';
+    }
+  };
+
+  const getIdPlaceholder = () => {
+    switch (role) {
+      case 'student': return 'e.g. 710121104001';
+      case 'faculty': return 'e.g. ACET-FAC-102';
+      default: return 'e.g. ID-12345';
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -214,8 +239,8 @@ const RegisterPageContent = () => {
 
       const result = await register(payload);
       if (result.success) {
-        setSuccessMsg('Registration successful! Redirecting to your dashboard...');
-        const targetRoute = result.redirect || (role === 'faculty' ? '/faculty/dashboard' : '/student/dashboard');
+        setSuccessMsg(`Registration successful as ${getRoleTitle()}! Redirecting to dashboard...`);
+        const targetRoute = result.redirect || getDashboardRoute(role);
         setTimeout(() => {
           navigate(targetRoute, { replace: true });
         }, 1000);
@@ -241,7 +266,7 @@ const RegisterPageContent = () => {
     <div
       className="register-page-container"
       style={{
-        maxWidth: '560px',
+        maxWidth: '580px',
         margin: '1.5rem auto 3rem',
         padding: '0 1rem',
         position: 'relative',
@@ -273,19 +298,20 @@ const RegisterPageContent = () => {
         <div
           style={{
             display: 'flex',
+            flexWrap: 'wrap',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '0.5rem',
+            gap: '0.4rem',
             marginBottom: '1.25rem',
-            padding: '0.45rem 0.75rem',
+            padding: '0.45rem 0.6rem',
             background: 'var(--color-brand-50)',
             borderRadius: '8px',
             border: '1px solid var(--color-brand-100)',
-            fontSize: '0.78rem'
+            fontSize: '0.76rem'
           }}
         >
           <span style={{ color: 'var(--color-brand-700)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            <Sparkles size={14} /> Quick Demo:
+            <Sparkles size={13} /> Quick Fill:
           </span>
           <button
             type="button"
@@ -294,14 +320,14 @@ const RegisterPageContent = () => {
               background: '#fff',
               border: '1px solid var(--color-brand-200)',
               color: 'var(--color-brand-700)',
-              padding: '0.2rem 0.6rem',
+              padding: '0.2rem 0.5rem',
               borderRadius: '6px',
-              fontSize: '0.75rem',
+              fontSize: '0.72rem',
               fontWeight: 600,
               cursor: 'pointer'
             }}
           >
-            Fill Student
+            Student
           </button>
           <button
             type="button"
@@ -310,76 +336,136 @@ const RegisterPageContent = () => {
               background: '#fff',
               border: '1px solid var(--color-brand-200)',
               color: 'var(--color-brand-700)',
-              padding: '0.2rem 0.6rem',
+              padding: '0.2rem 0.5rem',
               borderRadius: '6px',
-              fontSize: '0.75rem',
+              fontSize: '0.72rem',
               fontWeight: 600,
               cursor: 'pointer'
             }}
           >
-            Fill Faculty
+            Faculty
           </button>
         </div>
 
-        {/* Role Selection Tabs */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.5rem' }}>
+        {/* Role Selection Tabs (Student and Faculty can self-register; staff accounts are issued by admin) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          {/* Student */}
           <button
             type="button"
             onClick={() => setRole('student')}
             style={{
-              padding: '0.85rem',
+              padding: '0.65rem 0.75rem',
               borderRadius: '10px',
-              border: `2px solid ${role === 'student' ? 'var(--color-brand-600)' : 'var(--color-slate-200)'}`,
-              background: role === 'student' ? 'var(--color-brand-50)' : '#fff',
-              color: role === 'student' ? 'var(--color-brand-700)' : 'var(--color-slate-700)',
+              border: `2px solid ${role === 'student' ? '#059669' : 'var(--color-slate-200)'}`,
+              background: role === 'student' ? '#05966912' : '#fff',
+              color: role === 'student' ? '#059669' : 'var(--color-slate-700)',
               fontWeight: 700,
-              fontSize: '0.92rem',
+              fontSize: '0.85rem',
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.35rem',
-              transition: 'all 0.2s',
-              boxShadow: role === 'student' ? '0 2px 8px rgba(37, 99, 235, 0.15)' : 'none'
+              alignItems: 'flex-start',
+              gap: '0.2rem',
+              transition: 'all 0.15s ease',
+              textAlign: 'left'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <GraduationCap size={20} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <GraduationCap size={16} color={role === 'student' ? '#059669' : 'var(--color-slate-500)'} />
               <span>Student Account</span>
             </div>
-            <span style={{ fontSize: '0.72rem', fontWeight: 500, color: role === 'student' ? 'var(--color-brand-600)' : 'var(--color-slate-500)' }}>
-              Report classroom, lab, hostel issues
+            <span style={{ fontSize: '0.68rem', fontWeight: 500, color: 'var(--color-slate-500)', lineHeight: 1.25 }}>
+              Hostels, labs & classrooms
             </span>
           </button>
 
+          {/* Faculty */}
           <button
             type="button"
             onClick={() => setRole('faculty')}
             style={{
-              padding: '0.85rem',
+              padding: '0.65rem 0.75rem',
               borderRadius: '10px',
-              border: `2px solid ${role === 'faculty' ? 'var(--color-brand-600)' : 'var(--color-slate-200)'}`,
-              background: role === 'faculty' ? 'var(--color-brand-50)' : '#fff',
-              color: role === 'faculty' ? 'var(--color-brand-700)' : 'var(--color-slate-700)',
+              border: `2px solid ${role === 'faculty' ? '#7c3aed' : 'var(--color-slate-200)'}`,
+              background: role === 'faculty' ? '#7c3aed12' : '#fff',
+              color: role === 'faculty' ? '#7c3aed' : 'var(--color-slate-700)',
               fontWeight: 700,
-              fontSize: '0.92rem',
+              fontSize: '0.85rem',
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.35rem',
-              transition: 'all 0.2s',
-              boxShadow: role === 'faculty' ? '0 2px 8px rgba(37, 99, 235, 0.15)' : 'none'
+              alignItems: 'flex-start',
+              gap: '0.2rem',
+              transition: 'all 0.15s ease',
+              textAlign: 'left'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <School size={20} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <School size={16} color={role === 'faculty' ? '#7c3aed' : 'var(--color-slate-500)'} />
               <span>Faculty Account</span>
             </div>
-            <span style={{ fontSize: '0.72rem', fontWeight: 500, color: role === 'faculty' ? 'var(--color-brand-600)' : 'var(--color-slate-500)' }}>
-              Staff rooms, labs, department requests
+            <span style={{ fontSize: '0.68rem', fontWeight: 500, color: 'var(--color-slate-500)', lineHeight: 1.25 }}>
+              Staff rooms & dept labs
+            </span>
+          </button>
+
+          {/* Maintenance */}
+          <button
+            type="button"
+            onClick={() => setRole('maintenance')}
+            style={{
+              padding: '0.65rem 0.75rem',
+              borderRadius: '10px',
+              border: `2px solid ${role === 'maintenance' ? '#d97706' : 'var(--color-slate-200)'}`,
+              background: role === 'maintenance' ? '#d9770612' : '#fff',
+              color: role === 'maintenance' ? '#d97706' : 'var(--color-slate-700)',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              gap: '0.2rem',
+              transition: 'all 0.15s ease',
+              textAlign: 'left'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <Wrench size={16} color={role === 'maintenance' ? '#d97706' : 'var(--color-slate-500)'} />
+              <span>Maintenance Staff</span>
+            </div>
+            <span style={{ fontSize: '0.68rem', fontWeight: 500, color: 'var(--color-slate-500)', lineHeight: 1.25 }}>
+              Repairs & resolution desk
+            </span>
+          </button>
+
+          {/* Management */}
+          <button
+            type="button"
+            onClick={() => setRole('management')}
+            style={{
+              padding: '0.65rem 0.75rem',
+              borderRadius: '10px',
+              border: `2px solid ${role === 'management' ? '#2563eb' : 'var(--color-slate-200)'}`,
+              background: role === 'management' ? '#2563eb12' : '#fff',
+              color: role === 'management' ? '#2563eb' : 'var(--color-slate-700)',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              gap: '0.2rem',
+              transition: 'all 0.15s ease',
+              textAlign: 'left'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <ShieldCheck size={16} color={role === 'management' ? '#2563eb' : 'var(--color-slate-500)'} />
+              <span>Admin / Management</span>
+            </div>
+            <span style={{ fontSize: '0.68rem', fontWeight: 500, color: 'var(--color-slate-500)', lineHeight: 1.25 }}>
+              Estate oversight & controls
             </span>
           </button>
         </div>
@@ -447,7 +533,12 @@ const RegisterPageContent = () => {
                 name="name"
                 type="text"
                 className="form-input"
-                placeholder={role === 'student' ? 'e.g. Kavitha R' : 'e.g. Dr. Ramesh Kumar'}
+                placeholder={
+                  role === 'student' ? 'e.g. Kavitha R' :
+                  role === 'faculty' ? 'e.g. Dr. Ramesh Kumar' :
+                  role === 'maintenance' ? 'e.g. Suresh Kumar (Technician)' :
+                  'e.g. Campus Administrator'
+                }
                 value={formData.name}
                 onChange={handleChange}
                 disabled={isSubmitting}
@@ -462,10 +553,10 @@ const RegisterPageContent = () => {
             </div>
           </div>
 
-          {/* Academic Department */}
+          {/* Department */}
           <div className="form-group" style={{ marginBottom: '1.15rem' }}>
             <label className="form-label" htmlFor="department" style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-              Academic Department
+              {role === 'maintenance' ? 'Maintenance Discipline / Department' : 'Department'}
             </label>
             <div style={{ position: 'relative' }}>
               <select
@@ -477,10 +568,23 @@ const RegisterPageContent = () => {
                 disabled={isSubmitting}
                 style={{ paddingLeft: '2.5rem' }}
               >
-                <option value="">Select Academic Department (Optional)</option>
-                {COLLEGE_CONFIG.ACADEMIC_DEPARTMENTS?.map((dept, idx) => (
-                  <option key={idx} value={dept}>{dept}</option>
-                ))}
+                <option value="">
+                  {role === 'maintenance' ? 'Select Maintenance Discipline (e.g. Electrical, Plumbing)' : 'Select Department (Optional)'}
+                </option>
+                {role === 'maintenance' ? (
+                  <>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Plumbing">Plumbing</option>
+                    <option value="Civil & Infrastructure">Civil & Infrastructure</option>
+                    <option value="Carpentry">Carpentry</option>
+                    <option value="Cleaning & Sanitation">Cleaning & Sanitation</option>
+                    <option value="IT / Network Infrastructure">IT / Network Infrastructure</option>
+                  </>
+                ) : (
+                  COLLEGE_CONFIG.ACADEMIC_DEPARTMENTS?.map((dept, idx) => (
+                    <option key={idx} value={dept}>{dept}</option>
+                  ))
+                )}
               </select>
               <Building2
                 size={16}
@@ -490,10 +594,10 @@ const RegisterPageContent = () => {
             </div>
           </div>
 
-          {/* Student/Faculty ID */}
+          {/* Student/Faculty/Staff ID */}
           <div className="form-group" style={{ marginBottom: '1.15rem' }}>
             <label className="form-label" htmlFor="employee_or_student_id" style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-              {role === 'student' ? 'Student Register / Roll Number' : 'Faculty ID / Employee Code'}
+              {getIdLabel()}
             </label>
             <div style={{ position: 'relative' }}>
               <input
@@ -501,7 +605,7 @@ const RegisterPageContent = () => {
                 name="employee_or_student_id"
                 type="text"
                 className="form-input"
-                placeholder={role === 'student' ? 'e.g. 710121104001' : 'e.g. ACET-FAC-102'}
+                placeholder={getIdPlaceholder()}
                 value={formData.employee_or_student_id}
                 onChange={handleChange}
                 disabled={isSubmitting}
@@ -518,7 +622,7 @@ const RegisterPageContent = () => {
           {/* Official Email */}
           <div className="form-group" style={{ marginBottom: '1.15rem' }}>
             <label className="form-label" htmlFor="email" style={{ fontWeight: 600, fontSize: '0.85rem' }}>
-              Official College Email <span style={{ color: 'var(--color-danger-600)' }}>*</span>
+              Official Campus Email <span style={{ color: 'var(--color-danger-600)' }}>*</span>
             </label>
             <div style={{ position: 'relative' }}>
               <input
@@ -526,7 +630,12 @@ const RegisterPageContent = () => {
                 name="email"
                 type="email"
                 className="form-input"
-                placeholder={role === 'student' ? 'e.g. 710121104001@acetcbe.edu.in' : 'e.g. dr.ramesh@acetcbe.edu.in'}
+                placeholder={
+                  role === 'student' ? 'e.g. 710121104001@acetcbe.edu.in' :
+                  role === 'faculty' ? 'e.g. dr.ramesh@acetcbe.edu.in' :
+                  role === 'maintenance' ? 'e.g. technician@college.edu' :
+                  'e.g. administrator@college.edu'
+                }
                 value={formData.email}
                 onChange={handleChange}
                 disabled={isSubmitting}
@@ -543,7 +652,7 @@ const RegisterPageContent = () => {
               />
             </div>
             <div style={{ fontSize: '0.75rem', color: formData.email && !isCollegeEmailValid ? 'var(--color-danger-600)' : 'var(--color-slate-500)', marginTop: '0.35rem' }}>
-              Accepted domain: <strong>@{COLLEGE_CONFIG.OFFICIAL_EMAIL_DOMAIN}</strong> (or @college.edu)
+              Accepted domains: <strong>@{COLLEGE_CONFIG.OFFICIAL_EMAIL_DOMAIN}</strong> or <strong>@college.edu</strong>
             </div>
           </div>
 
@@ -716,7 +825,7 @@ const RegisterPageContent = () => {
               <span>Registering Account...</span>
             ) : (
               <>
-                <span>Complete {role === 'student' ? 'Student' : 'Faculty'} Registration</span>
+                <span>Complete {getRoleTitle()} Registration</span>
                 <ArrowRight size={18} />
               </>
             )}

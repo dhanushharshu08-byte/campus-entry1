@@ -151,6 +151,14 @@ const Sidebar = () => {
                 </NavLink>
 
                 <NavLink
+                  to="/management/staff"
+                  className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                >
+                  <Wrench size={18} />
+                  <span>Maintenance Staff</span>
+                </NavLink>
+
+                <NavLink
                   to="/management/reports"
                   className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
                 >

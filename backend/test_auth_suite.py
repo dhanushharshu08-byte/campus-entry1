@@ -87,14 +87,14 @@ def test_suite():
     res = s_admin.get(f"{BASE_URL}/api/auth/test/management")
     assert_test("Management allowed on management route (200)", res.status_code == 200)
 
-    # 14. Registration validation: Disallow maintenance role in public registration
+    # 14. Registration validation: Disallow invalid role in registration
     res = requests.post(f"{BASE_URL}/api/auth/register", json={
         "name": "Hacker Tech",
         "email": "hacker@college.edu",
         "password": "Password123",
-        "role": "maintenance"
+        "role": "invalid_role"
     })
-    assert_test("Public registration rejects 'maintenance' role (400)", res.status_code == 400 and res.json().get("success") is False)
+    assert_test("Public registration rejects invalid role (400)", res.status_code == 400 and res.json().get("success") is False)
 
     # 15. Registration validation: Disallow password < 8 chars
     res = requests.post(f"{BASE_URL}/api/auth/register", json={

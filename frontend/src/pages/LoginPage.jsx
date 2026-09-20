@@ -78,8 +78,13 @@ const LoginPage = () => {
 
     if (result.success) {
       setSuccessMsg(`Welcome, ${result.user.name || result.user.email}! Redirecting...`);
+      // Always navigate to the role-correct dashboard.
+      // Only honour fromPath if it starts with the user's own role prefix,
+      // so a stale path from a previous role never misdirects the new user.
+      const rolePrefix = `/${result.user.role}/`;
+      const safeFrom = fromPath && fromPath.startsWith(rolePrefix) ? fromPath : null;
       setTimeout(() => {
-        navigate(fromPath || result.redirect);
+        navigate(safeFrom || result.redirect);
       }, 500);
     } else {
       setFormError(result.error || 'Invalid email or password.');
@@ -127,12 +132,13 @@ const LoginPage = () => {
           </p>
         </div>
 
-        {/* Quick Role Fill Selectors */}
+
+        {/* Quick Role Fill Selectors with visible credentials */}
         <div style={{ marginBottom: '1.5rem' }}>
           <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-slate-500)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.5rem', textAlign: 'center' }}>
-            Select Portal Account
+            Demo Accounts — Click to Fill
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.4rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
             {quickRoles.map((r, idx) => {
               const RoleIcon = r.icon;
               const isSelected = email === r.email;
@@ -144,20 +150,30 @@ const LoginPage = () => {
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                    padding: '0.5rem 0.2rem',
-                    borderRadius: '8px',
+                    alignItems: 'flex-start',
+                    gap: '0.1rem',
+                    padding: '0.6rem 0.75rem',
+                    borderRadius: '10px',
                     border: isSelected ? `2px solid ${r.color}` : '1px solid var(--color-slate-200)',
-                    background: isSelected ? '#f8fafc' : '#ffffff',
+                    background: isSelected ? `${r.color}10` : '#ffffff',
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease'
+                    transition: 'all 0.15s ease',
+                    textAlign: 'left',
+                    width: '100%',
                   }}
                 >
-                  <RoleIcon size={16} color={r.color} />
-                  <span style={{ fontSize: '0.725rem', fontWeight: isSelected ? 700 : 500, color: 'var(--color-slate-700)' }}>
-                    {r.label}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
+                    <RoleIcon size={13} color={r.color} />
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: r.color }}>
+                      {r.label}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.67rem', color: 'var(--color-slate-500)', fontFamily: 'monospace', lineHeight: 1.55, wordBreak: 'break-all' }}>
+                    {r.email}
+                  </div>
+                  <div style={{ fontSize: '0.67rem', color: 'var(--color-slate-400)', fontFamily: 'monospace' }}>
+                    pw:&nbsp;{r.pass}
+                  </div>
                 </button>
               );
             })}
@@ -298,7 +314,7 @@ const LoginPage = () => {
         <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-slate-600)' }}>
           Don't have an institutional account?{' '}
           <Link to="/register" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>
-            Register as Student / Faculty
+            Register as Student / Faculty / Staff
           </Link>
         </div>
       </div>

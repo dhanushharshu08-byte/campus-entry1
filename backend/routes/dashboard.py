@@ -30,9 +30,9 @@ def get_summary():
     in_progress = Complaint.query.filter_by(status='In Progress').count()
     resolved = Complaint.query.filter_by(status='Resolved').count()
     closed = Complaint.query.filter_by(status='Closed').count()
-    reopened = StatusLog.query.filter(
+    reopened = db.session.query(db.func.count(db.func.distinct(StatusLog.complaint_id))).filter(
         or_(StatusLog.new_status == 'Reopened', StatusLog.comments.ilike('%reopened%'))
-    ).distinct(StatusLog.complaint_id).count()
+    ).scalar() or 0
 
     overdue = Complaint.query.filter(
         Complaint.status.in_(['Submitted', 'Assigned', 'In Progress', 'Reopened']),

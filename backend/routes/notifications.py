@@ -45,7 +45,7 @@ def mark_notification_read(notification_id):
     """
     Mark a notification belonging to the authenticated user as read.
     """
-    notification = Notification.query.get(notification_id)
+    notification = db.session.get(Notification, notification_id)
     if not notification or notification.user_id != current_user.id:
         return jsonify({
             "success": False,

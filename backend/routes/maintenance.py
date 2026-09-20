@@ -153,7 +153,7 @@ def get_maintenance_complaint_details(complaint_id):
     Returns full details and timeline for a complaint.
     Centralized maintenance users can view complaints from all departments.
     """
-    complaint = Complaint.query.get(complaint_id)
+    complaint = db.session.get(Complaint, complaint_id)
     if not complaint:
         return jsonify({"success": False, "message": "Complaint not found."}), 404
 
@@ -182,7 +182,7 @@ def accept_complaint(complaint_id):
     Accepts a complaint and transitions status to 'In Progress'.
     Records first_response_at, creates StatusLog & AuditLog, and notifies creator.
     """
-    complaint = Complaint.query.get(complaint_id)
+    complaint = db.session.get(Complaint, complaint_id)
     if not complaint:
         return jsonify({"success": False, "message": "Complaint not found."}), 404
 
@@ -263,7 +263,7 @@ def resolve_complaint(complaint_id):
     Requires multipart/form-data with resolution_remarks and resolution_photo.
     Computes resolution_time_minutes, records StatusLog & AuditLog.
     """
-    complaint = Complaint.query.get(complaint_id)
+    complaint = db.session.get(Complaint, complaint_id)
     if not complaint:
         return jsonify({"success": False, "message": "Complaint not found."}), 404
 

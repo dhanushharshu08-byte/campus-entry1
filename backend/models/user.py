@@ -104,7 +104,7 @@ class User(UserMixin, db.Model):
 @login_manager.user_loader
 def load_user(user_id):
     try:
-        user = User.query.get(int(user_id))
+        user = db.session.get(User, int(user_id))
         if user and user.is_active:
             return user
         return None

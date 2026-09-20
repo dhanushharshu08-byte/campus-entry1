@@ -1514,6 +1514,7 @@ button, input, select, textarea {
 .hero-gradient-text {
   background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #38bdf8 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -3469,4 +3470,275 @@ button, input, select, textarea {
 }
 
 
+/* ==========================================================================
+   SUBTLE 3D VISUAL ENHANCEMENT LAYER
+   Pure CSS depth / elevation effects — no functionality changed.
+   Uses existing class names only. Safe to revert by removing this block.
+   ========================================================================== */
 
+/* ---- CSS Variables for the 3D shadow system ---- */
+:root {
+  --shadow-3d-sm:    0 1px 3px rgba(15,23,42,0.10), 0 1px 2px rgba(15,23,42,0.06);
+  --shadow-3d-md:    0 4px 12px rgba(15,23,42,0.10), 0 2px 6px rgba(15,23,42,0.07), 0 1px 2px rgba(15,23,42,0.05);
+  --shadow-3d-lg:    0 10px 28px rgba(15,23,42,0.11), 0 4px 10px rgba(15,23,42,0.07), 0 2px 4px rgba(15,23,42,0.05);
+  --shadow-3d-lift:  0 14px 32px rgba(15,23,42,0.13), 0 6px 14px rgba(15,23,42,0.09), 0 2px 5px rgba(15,23,42,0.06);
+  --shadow-3d-press: 0 1px 4px rgba(15,23,42,0.14), 0 1px 2px rgba(15,23,42,0.10);
+  --transition-3d:   all 0.18s cubic-bezier(0.34, 1.26, 0.64, 1);
+}
+
+/* =========================================================
+   1. SIDEBAR — nav-item depth & active elevation
+   ========================================================= */
+.app-sidebar {
+  box-shadow: 2px 0 18px rgba(15, 23, 42, 0.18);
+}
+
+.nav-item {
+  transition: var(--transition-3d);
+  position: relative;
+}
+
+.nav-item:hover {
+  transform: translateX(2px);
+  box-shadow: var(--shadow-3d-sm);
+}
+
+.nav-item.active {
+  box-shadow:
+    0 4px 14px rgba(37, 99, 235, 0.35),
+    0 2px 6px  rgba(37, 99, 235, 0.22),
+    inset 0 1px 0 rgba(255,255,255,0.15);
+  transform: translateX(2px) translateY(-1px);
+}
+
+/* =========================================================
+   2. DASHBOARD CARDS — elevated 3D depth
+   ========================================================= */
+.card {
+  box-shadow: var(--shadow-3d-md);
+  transition: var(--transition-3d);
+  will-change: transform, box-shadow;
+}
+
+.card:hover {
+  transform: translateY(-3px) scale(1.005);
+  box-shadow: var(--shadow-3d-lift);
+  border-color: rgba(191, 219, 254, 0.95);
+}
+
+/* =========================================================
+   3. STAT CARDS — subtle lift on hover
+   ========================================================= */
+.stat-card {
+  box-shadow: var(--shadow-3d-md);
+  transition: var(--transition-3d);
+  will-change: transform, box-shadow;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: var(--shadow-3d-lift);
+  border-color: rgba(191, 219, 254, 0.95);
+}
+
+.stat-icon-wrapper {
+  box-shadow:
+    0 2px 8px rgba(15, 23, 42, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* =========================================================
+   4. BUTTONS — raised press / lift 3D effect
+   ========================================================= */
+.btn {
+  box-shadow:
+    0 2px 5px rgba(15,23,42,0.12),
+    0 1px 2px rgba(15,23,42,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.18);
+  transition: var(--transition-3d);
+  will-change: transform, box-shadow;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 14px rgba(15,23,42,0.14),
+    0 2px 5px  rgba(15,23,42,0.09),
+    inset 0 1px 0 rgba(255,255,255,0.18);
+}
+
+.btn:active {
+  transform: translateY(1px) scale(0.985);
+  box-shadow: var(--shadow-3d-press);
+}
+
+.btn-primary {
+  box-shadow:
+    0 3px 8px rgba(37,99,235,0.30),
+    0 1px 3px rgba(37,99,235,0.20),
+    inset 0 1px 0 rgba(255,255,255,0.20);
+}
+
+.btn-primary:hover {
+  box-shadow:
+    0 6px 18px rgba(37,99,235,0.36),
+    0 3px 8px  rgba(37,99,235,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.20);
+  transform: translateY(-2px);
+}
+
+.btn-primary:active {
+  transform: translateY(1px) scale(0.985);
+  box-shadow:
+    0 1px 4px rgba(37,99,235,0.30),
+    0 1px 2px rgba(37,99,235,0.18);
+}
+
+.btn-secondary {
+  box-shadow:
+    0 2px 6px rgba(15,23,42,0.08),
+    0 1px 2px rgba(15,23,42,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.80);
+}
+
+.btn-secondary:hover {
+  box-shadow:
+    0 4px 10px rgba(15,23,42,0.10),
+    0 2px 4px  rgba(15,23,42,0.07),
+    inset 0 1px 0 rgba(255,255,255,0.80);
+  transform: translateY(-1px);
+}
+
+.btn-icon {
+  box-shadow: 0 1px 3px rgba(15,23,42,0.09), inset 0 1px 0 rgba(255,255,255,0.70);
+  transition: var(--transition-3d);
+}
+.btn-icon:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(15,23,42,0.12), inset 0 1px 0 rgba(255,255,255,0.70);
+}
+.btn-icon:active {
+  transform: translateY(0px) scale(0.95);
+  box-shadow: var(--shadow-3d-press);
+}
+
+.btn-danger-outline,
+.btn-success-outline {
+  box-shadow: 0 1px 3px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.60);
+  transition: var(--transition-3d);
+}
+.btn-danger-outline:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(220,38,38,0.15);
+}
+.btn-success-outline:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(5,150,105,0.15);
+}
+
+/* =========================================================
+   5. TABS — raised / sunken 3D shelf feel
+   ========================================================= */
+.tab-container {
+  padding: 0.5rem 0.5rem 0;
+  border-bottom: none;
+  background: rgba(248, 250, 252, 0.90);
+  border-radius: 12px 12px 0 0;
+  box-shadow:
+    inset 0 -1px 0 rgba(226, 232, 240, 0.9),
+    0 2px 8px rgba(15,23,42,0.05);
+  gap: 0.35rem;
+}
+
+.tab-btn {
+  transition: var(--transition-3d);
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.tab-btn:hover {
+  transform: translateY(-2px);
+  background-color: rgba(255,255,255,0.85);
+  box-shadow:
+    0 2px 8px rgba(15,23,42,0.08),
+    0 1px 3px rgba(15,23,42,0.05),
+    inset 0 1px 0 rgba(255,255,255,0.90);
+  border-color: rgba(226, 232, 240, 0.80);
+  color: var(--color-slate-800);
+}
+
+.tab-btn.active {
+  background-color: #ffffff;
+  color: var(--color-brand-700);
+  border-color: rgba(191, 219, 254, 0.80);
+  transform: translateY(-3px);
+  box-shadow:
+    0 4px 12px rgba(37,99,235,0.12),
+    0 2px 5px  rgba(37,99,235,0.08),
+    inset 0 1px 0 rgba(255,255,255,1.00);
+}
+
+/* =========================================================
+   6. PROGRESS BARS — 3D track depth (class-based bars)
+   ========================================================= */
+.progress-bar-bg {
+  box-shadow: inset 0 1px 3px rgba(15,23,42,0.14), inset 0 0 0 1px rgba(15,23,42,0.05);
+  border-radius: 6px !important;
+  overflow: hidden;
+}
+
+/* =========================================================
+   7. TABLE ROWS — hover depth lift
+   ========================================================= */
+.data-table tbody tr {
+  transition: all 0.14s ease;
+}
+.data-table tbody tr:hover {
+  box-shadow: 0 2px 8px rgba(15,23,42,0.06);
+  transform: translateY(-1px);
+  position: relative;
+  z-index: 1;
+}
+
+/* =========================================================
+   8. APP HEADER — elevated glass look
+   ========================================================= */
+.app-header {
+  box-shadow:
+    0 2px 12px rgba(15,23,42,0.08),
+    0 1px 4px  rgba(15,23,42,0.05);
+}
+
+/* =========================================================
+   9. MODALS — floating depth
+   ========================================================= */
+.modal-content {
+  box-shadow:
+    0 24px 64px rgba(15,23,42,0.18),
+    0 8px 24px  rgba(15,23,42,0.12),
+    0 2px 8px   rgba(15,23,42,0.08);
+  animation: modal3dFadeIn 0.22s cubic-bezier(0.34, 1.26, 0.64, 1);
+}
+
+@keyframes modal3dFadeIn {
+  from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)     scale(1);    }
+}
+
+/* =========================================================
+   10. NOTIFICATION ITEMS — gentle press-in on hover
+   ========================================================= */
+.notification-list-item {
+  transition: all 0.15s ease;
+}
+.notification-list-item:hover {
+  box-shadow: inset 0 0 0 1px rgba(191,219,254,0.50), 0 2px 6px rgba(15,23,42,0.05);
+  transform: translateX(2px);
+}
+.notification-list-item.unread-item {
+  box-shadow: inset 3px 0 0 var(--color-brand-600), 0 1px 4px rgba(15,23,42,0.04);
+}
+
+/* =========================================================
+   END OF 3D ENHANCEMENT LAYER
+   ========================================================= */

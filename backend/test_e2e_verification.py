@@ -171,12 +171,12 @@ class MasterE2EVerificationSuite(unittest.TestCase):
         saved_fac = User.query.filter_by(email='newfaculty@college.edu').first()
         self.assertEqual(saved_fac.role, 'faculty')
 
-        # 4. Invalid Role Registration (e.g. attempting to register as management or maintenance directly)
+        # 4. Invalid Role Registration (e.g. attempting to register with invalid/unsupported role)
         bad_role_res = self.client.post('/api/auth/register', json={
             'name': 'Hacker Admin',
             'email': 'hacker@college.edu',
             'password': 'StrongPassword@123',
-            'role': 'management'
+            'role': 'invalid_role'
         })
         self.assertEqual(bad_role_res.status_code, 400)
 

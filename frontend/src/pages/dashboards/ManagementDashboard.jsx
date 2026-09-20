@@ -10,6 +10,7 @@ import ComplaintTrendChart from '../../components/management/ComplaintTrendChart
 import StaffWorkloadChart from '../../components/management/StaffWorkloadChart';
 import RecentComplaints from '../../components/management/RecentComplaints';
 import LiveActivity from '../../components/management/LiveActivity';
+import CreateMaintenanceStaffModal from '../../components/management/CreateMaintenanceStaffModal';
 import { COLLEGE_CONFIG } from '../../config/collegeConfig';
 import { 
   Building2, 
@@ -23,7 +24,10 @@ import {
   BarChart3, 
   Sliders, 
   Wrench, 
-  Shield
+  Shield,
+  Plus,
+  CheckCircle2,
+  ArrowRight
 } from 'lucide-react';
 
 const ManagementDashboard = () => {
@@ -39,6 +43,8 @@ const ManagementDashboard = () => {
   const [slaSummary, setSlaSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showCreateStaffModal, setShowCreateStaffModal] = useState(false);
+  const [staffCreatedFeedback, setStaffCreatedFeedback] = useState(null);
 
   // Join management room
   useEffect(() => {
@@ -246,6 +252,34 @@ const ManagementDashboard = () => {
         </div>
       )}
 
+      {/* Staff Creation Feedback Alert */}
+      {staffCreatedFeedback && (
+        <div 
+          className="alert alert-success" 
+          style={{ 
+            marginBottom: '1.25rem', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            padding: '0.85rem 1.25rem',
+            borderRadius: '10px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <CheckCircle2 size={18} color="#059669" />
+            <span style={{ fontWeight: 600 }}>{staffCreatedFeedback}</span>
+          </div>
+          <button 
+            type="button" 
+            className="alert-close-btn" 
+            onClick={() => setStaffCreatedFeedback(null)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: '#065f46' }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Primary KPI Metrics Grid */}
       <ManagementStats stats={stats} />
 
@@ -278,6 +312,108 @@ const ManagementDashboard = () => {
           <StaffWorkloadChart staff={staff} />
         </div>
       </div>
+
+      {/* Section 4: Maintenance Staff Management */}
+      <div className="card" style={{ marginBottom: '1.75rem', padding: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+          <div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-slate-900)', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 0.25rem 0' }}>
+              <div style={{ backgroundColor: '#fef3c7', color: '#b45309', padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Wrench size={18} />
+              </div>
+              Maintenance Staff Management
+            </h2>
+            <p style={{ color: 'var(--color-slate-500)', fontSize: '0.85rem', margin: 0 }}>
+              Authorized administration for creating maintenance personnel accounts, allocating trade departments, and tracking workload.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => setShowCreateStaffModal(true)}
+              className="btn btn-primary"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', padding: '0.55rem 1rem' }}
+            >
+              <Plus size={16} />
+              <span>Create Maintenance Staff</span>
+            </button>
+            <Link
+              to="/management/staff"
+              className="btn btn-secondary"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', padding: '0.55rem 1rem' }}
+            >
+              <Users size={15} />
+              <span>Staff Performance</span>
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+        </div>
+
+        {/* Staff Table / Summary */}
+        <div className="table-container" style={{ margin: 0 }}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Staff Name</th>
+                <th>Department</th>
+                <th>Email Address</th>
+                <th style={{ textAlign: 'center' }}>Active Tickets</th>
+                <th style={{ textAlign: 'center' }}>In Progress</th>
+                <th style={{ textAlign: 'center' }}>Resolved</th>
+                <th style={{ textAlign: 'center' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {staff && staff.length > 0 ? (
+                staff.slice(0, 6).map((member) => (
+                  <tr key={member.id}>
+                    <td>
+                      <div style={{ fontWeight: 700, color: 'var(--color-slate-900)' }}>{member.name}</div>
+                    </td>
+                    <td>
+                      <span className="badge badge-assigned" style={{ fontSize: '0.78rem' }}>
+                        {member.department || 'General Maintenance'}
+                      </span>
+                    </td>
+                    <td>
+                      <span style={{ fontSize: '0.825rem', color: 'var(--color-slate-600)' }}>
+                        {member.email}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'center', fontWeight: 700, color: member.active_complaints >= 5 ? '#dc2626' : 'var(--color-slate-900)' }}>
+                      {member.active_complaints}
+                    </td>
+                    <td style={{ textAlign: 'center', color: '#d97706', fontWeight: 600 }}>{member.in_progress}</td>
+                    <td style={{ textAlign: 'center', color: '#059669', fontWeight: 600 }}>{member.resolved}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span className="badge badge-active" style={{ fontSize: '0.75rem', backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
+                        Active
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-slate-500)' }}>
+                    No maintenance staff members found. Click "Create Maintenance Staff" to add technicians.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modal: Create Maintenance Staff */}
+      <CreateMaintenanceStaffModal
+        isOpen={showCreateStaffModal}
+        onClose={() => setShowCreateStaffModal(false)}
+        onSuccess={(createdUser) => {
+          setStaffCreatedFeedback(`Maintenance staff account created successfully for ${createdUser.name} (${createdUser.email}).`);
+          loadAllDashboardData();
+        }}
+      />
     </div>
   );
 };

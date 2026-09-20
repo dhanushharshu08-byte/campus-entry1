@@ -37,6 +37,15 @@ DEMO_USERS_DATA = [
         "phone": "+1-555-0101"
     },
     {
+        "name": "Electrician Dave",
+        "email": "electrician@college.edu",
+        "password": "Tech@123",
+        "role": "maintenance",
+        "department_name": "Electrical",
+        "employee_or_student_id": "TECH-ELEC-01",
+        "phone": "+1-555-0102"
+    },
+    {
         "name": "John Doe (Student)",
         "email": "student@acetcbe.edu.in",
         "password": "Student@123",
@@ -46,8 +55,26 @@ DEMO_USERS_DATA = [
         "phone": "+1-555-0105"
     },
     {
+        "name": "John Doe (Student)",
+        "email": "student@college.edu",
+        "password": "Student@123",
+        "role": "student",
+        "department_name": None,
+        "employee_or_student_id": "STU-2026-042",
+        "phone": "+1-555-0105"
+    },
+    {
         "name": "Prof. Sarah Smith (Faculty)",
         "email": "faculty@acetcbe.edu.in",
+        "password": "Faculty@123",
+        "role": "faculty",
+        "department_name": None,
+        "employee_or_student_id": "FAC-ENG-108",
+        "phone": "+1-555-0106"
+    },
+    {
+        "name": "Prof. Sarah Smith (Faculty)",
+        "email": "faculty@college.edu",
         "password": "Faculty@123",
         "role": "faculty",
         "department_name": None,

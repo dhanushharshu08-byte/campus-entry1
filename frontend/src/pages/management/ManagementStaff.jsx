@@ -1,32 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { managementApi } from '../../services/api';
 import StaffWorkloadChart from '../../components/management/StaffWorkloadChart';
-import { Users, Mail, Wrench, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import CreateMaintenanceStaffModal from '../../components/management/CreateMaintenanceStaffModal';
+import { Users, Mail, Wrench, AlertTriangle, CheckCircle2, Plus, RefreshCw } from 'lucide-react';
 
 const ManagementStaff = () => {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+
+  const fetchStaff = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await managementApi.getStaffPerformance();
+      if (res.data?.success) {
+        setStaff(res.data.staff || []);
+      }
+    } catch (err) {
+      console.error('Failed to load maintenance staff performance:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchStaff = async () => {
-      setLoading(true);
-      try {
-        const res = await managementApi.getStaffPerformance();
-        if (res.data?.success) {
-          setStaff(res.data.staff || []);
-        }
-      } catch (err) {
-        console.error('Failed to load maintenance staff performance:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchStaff();
-  }, []);
+  }, [fetchStaff]);
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+      {feedback && (
+        <div className="alert alert-success" style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <CheckCircle2 size={18} />
+            <span>{feedback}</span>
+          </div>
+          <button 
+            type="button" 
+            className="alert-close-btn" 
+            onClick={() => setFeedback(null)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', color: '#065f46' }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-slate-900)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Users size={24} color="var(--color-brand-600)" />
@@ -36,8 +57,25 @@ const ManagementStaff = () => {
             Real-time operational tracking of active maintenance personnel, assigned ticket loads, and resolution performance.
           </p>
         </div>
-        <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-slate-600)' }}>
-          Active Staff: <strong style={{ color: 'var(--color-brand-700)' }}>{staff.length}</strong>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className="btn btn-primary"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}
+          >
+            <Plus size={16} />
+            <span>+ Create Maintenance Staff</span>
+          </button>
+          <button 
+            type="button" 
+            onClick={fetchStaff} 
+            className="btn btn-secondary" 
+            title="Refresh Staff Metrics"
+            style={{ padding: '0.6rem 0.8rem' }}
+          >
+            <RefreshCw size={15} className={loading ? 'spin' : ''} />
+          </button>
         </div>
       </div>
 
@@ -109,6 +147,15 @@ const ManagementStaff = () => {
           </table>
         </div>
       </div>
+
+      <CreateMaintenanceStaffModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={(createdUser) => {
+          setFeedback(`Maintenance staff account created successfully for ${createdUser.name} (${createdUser.email}).`);
+          fetchStaff();
+        }}
+      />
     </div>
   );
 };

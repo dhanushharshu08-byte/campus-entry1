@@ -33,10 +33,12 @@ def get_faculty_dashboard():
     resolved_count = query.filter_by(status='Resolved').count()
     closed_count = query.filter_by(status='Closed').count()
     from models.status_log import StatusLog
-    reopened_count = StatusLog.query.join(Complaint).filter(
+    reopened_count = db.session.query(db.func.count(db.func.distinct(StatusLog.complaint_id))).join(
+        Complaint, StatusLog.complaint_id == Complaint.id
+    ).filter(
         Complaint.created_by == user_id,
         or_(Complaint.status == 'Reopened', StatusLog.new_status == 'Reopened', StatusLog.comments.ilike('%reopened%'))
-    ).distinct(StatusLog.complaint_id).count()
+    ).scalar() or 0
 
     overdue_count = query.filter(
         Complaint.status.in_(['Submitted', 'Assigned', 'In Progress', 'Reopened']),

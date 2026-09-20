@@ -18,6 +18,7 @@ import io
 import re
 import csv
 import shutil
+from typing import overload, Optional, Any, Dict
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, request, jsonify, Response, current_app
 from flask_login import login_required, current_user
@@ -49,7 +50,13 @@ from services.socket_service import (
     emit_department_updated
 )
 
-def _to_utc(dt):
+@overload
+def _to_utc(dt: datetime) -> datetime: ...  # non-None in → non-None out
+@overload
+def _to_utc(dt: None) -> None: ...          # None in → None out
+
+def _to_utc(dt: Optional[datetime]) -> Optional[datetime]:
+    """Ensure a datetime is UTC-aware. Returns None if dt is None."""
     if dt is None:
         return None
     if dt.tzinfo is None:
@@ -127,7 +134,7 @@ def get_department_performance():
 
         # Compute SLA compliance % and average resolution time
         completed = dept_complaints.filter(Complaint.status.in_(['Resolved', 'Closed'])).all()
-        within_sla_count = sum(1 for c in completed if c.resolved_at and c.sla_deadline and _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline))
+        within_sla_count = sum(1 for c in completed if c.resolved_at is not None and c.sla_deadline is not None and _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline))
         sla_pct = round((within_sla_count / len(completed) * 100), 1) if completed else 100.0
 
         res_times = [c.resolution_time_minutes for c in completed if c.resolution_time_minutes is not None]
@@ -295,7 +302,7 @@ def list_all_complaints():
 @role_required('management')
 def get_management_complaint_details(complaint_id):
     """Returns full grievance details for college management, including timeline, internal remarks, and audit logs."""
-    complaint = Complaint.query.get(complaint_id)
+    complaint = db.session.get(Complaint, complaint_id)
     if not complaint:
         return jsonify({"success": False, "message": "Complaint not found."}), 404
 
@@ -432,7 +439,7 @@ def get_live_activity():
     result = []
     for log in logs:
         log_dict = log.to_dict()
-        comp = Complaint.query.get(log.complaint_id)
+        comp = db.session.get(Complaint, log.complaint_id)
         if comp:
             log_dict['complaint_number'] = comp.complaint_number
             log_dict['complaint_title'] = comp.title
@@ -553,12 +560,12 @@ def reassign_complaint(complaint_id):
     if not reason or len(reason) < 5:
         return jsonify({"success": False, "message": "A valid reassignment reason (min 5 chars) is required."}), 400
 
-    new_staff = User.query.get(new_staff_id)
+    new_staff = db.session.get(User, new_staff_id)
     if not new_staff or new_staff.role != 'maintenance' or not new_staff.is_active:
         return jsonify({"success": False, "message": "Target user is not an active maintenance employee."}), 400
 
     old_staff_id = complaint.assigned_to
-    old_staff = User.query.get(old_staff_id) if old_staff_id else None
+    old_staff = db.session.get(User, old_staff_id) if old_staff_id else None
     old_staff_name = old_staff.name if old_staff else "None"
 
     if old_staff_id == new_staff.id:
@@ -632,7 +639,7 @@ def change_complaint_priority(complaint_id):
     Changes grievance priority and recalculates SLA deadline if active.
     Logs audit event and notifies assigned staff.
     """
-    complaint = Complaint.query.get(complaint_id)
+    complaint = db.session.get(Complaint, complaint_id)
     if not complaint:
         return jsonify({"success": False, "message": "Complaint not found."}), 404
 
@@ -701,7 +708,7 @@ def change_complaint_priority(complaint_id):
 @role_required('management')
 def add_internal_remark(complaint_id):
     """Adds an internal management remark to the complaint timeline (hidden from students/faculty)."""
-    complaint = Complaint.query.get(complaint_id)
+    complaint = db.session.get(Complaint, complaint_id)
     if not complaint:
         return jsonify({"success": False, "message": "Complaint not found."}), 404
 
@@ -943,13 +950,13 @@ def create_management_user():
 @login_required
 @role_required('management')
 def create_maintenance_user():
-    """Creates a new maintenance staff account."""
+    """Creates a new maintenance staff account by Management/Admin."""
     data = request.get_json() or {}
     name = (data.get('name') or '').strip()
     email = (data.get('email') or '').strip().lower()
     phone = (data.get('phone') or '').strip()
     password = data.get('password') or ''
-    confirm_password = data.get('confirm_password')
+    confirm_password = data.get('confirm_password') or ''
     dept_id = data.get('department_id')
     dept_name = data.get('department')
     emp_id = (data.get('employee_or_student_id') or '').strip()
@@ -958,15 +965,19 @@ def create_maintenance_user():
         return jsonify({"success": False, "message": "Full name is required."}), 400
     if not email or not EMAIL_REGEX.match(email):
         return jsonify({"success": False, "message": "A valid email address is required."}), 400
-    if not password or len(password) < 8:
+    if not password:
+        return jsonify({"success": False, "message": "Password is required."}), 400
+    if len(password) < 8:
         return jsonify({"success": False, "message": "Password must be at least 8 characters long."}), 400
-    if confirm_password and password != confirm_password:
-        return jsonify({"success": False, "message": "Password confirmation does not match."}), 400
+    if not confirm_password:
+        return jsonify({"success": False, "message": "Password confirmation is required."}), 400
+    if password != confirm_password:
+        return jsonify({"success": False, "message": "Passwords do not match. Please re-enter your password."}), 400
 
     dept = None
     if dept_id:
         try:
-            dept = Department.query.get(int(dept_id))
+            dept = db.session.get(Department, int(dept_id))
         except (ValueError, TypeError):
             dept = None
     elif dept_name:
@@ -975,8 +986,9 @@ def create_maintenance_user():
     if not dept:
         return jsonify({"success": False, "message": "A valid department is required for maintenance staff."}), 400
 
-    if User.query.filter_by(email=email).first():
-        return jsonify({"success": False, "message": "An account with this email address already exists."}), 409
+    existing_user = User.query.filter(func.lower(User.email) == email.lower()).first()
+    if existing_user:
+        return jsonify({"success": False, "message": "An account with this email address already exists. Please use a different email."}), 409
 
     try:
         user = User(
@@ -1019,7 +1031,7 @@ def create_maintenance_user():
 @role_required('management')
 def edit_user(user_id):
     """Edits user profile details (Name, Email, Phone, Department). Role cannot be modified."""
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         return jsonify({"success": False, "message": "User not found."}), 404
 
@@ -1053,7 +1065,7 @@ def edit_user(user_id):
         new_dept = None
         if dept_id:
             try:
-                new_dept = Department.query.get(int(dept_id))
+                new_dept = db.session.get(Department, int(dept_id))
             except (ValueError, TypeError):
                 new_dept = None
         elif dept_name:
@@ -1096,7 +1108,7 @@ def edit_user(user_id):
     db.session.commit()
     emit_management_dashboard_update({"user_updated": user.id})
 
-    response_data = {
+    response_data: Dict[str, Any] = {
         "success": True,
         "message": f"User {user.name} updated successfully.",
         "user": user.to_dict()
@@ -1113,7 +1125,7 @@ def edit_user(user_id):
 @role_required('management')
 def change_user_password(user_id):
     """Changes or resets password for a user account."""
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         return jsonify({"success": False, "message": "User not found."}), 404
 
@@ -1156,7 +1168,7 @@ def change_user_password(user_id):
 @role_required('management')
 def toggle_user_status(user_id):
     """Soft-enables or soft-disables a user account. Protects against deactivating last active management account."""
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         return jsonify({"success": False, "message": "User not found."}), 404
 
@@ -1233,7 +1245,7 @@ def toggle_user_status(user_id):
 @role_required('management')
 def get_user_active_complaints(user_id):
     """Returns active complaints assigned to a technician."""
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         return jsonify({"success": False, "message": "User not found."}), 404
 
@@ -1255,7 +1267,7 @@ def get_user_active_complaints(user_id):
 @role_required('management')
 def reassign_user_complaints(user_id):
     """Reassigns active complaints from one technician to another."""
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     if not user:
         return jsonify({"success": False, "message": "User not found."}), 404
 
@@ -1266,7 +1278,7 @@ def reassign_user_complaints(user_id):
     reassign_all = data.get('reassign_all', False)
 
     try:
-        new_staff = User.query.get(int(new_staff_id))
+        new_staff = db.session.get(User, int(new_staff_id)) if new_staff_id is not None else None
     except (ValueError, TypeError):
         new_staff = None
 
@@ -1347,7 +1359,7 @@ def disable_and_reassign_user(user_id):
     reason = (data.get('reason') or '').strip() or f"Staff deactivated ({user.name})"
 
     try:
-        new_staff = User.query.get(int(new_staff_id))
+        new_staff = User.query.get(int(new_staff_id)) if new_staff_id is not None else None
     except (ValueError, TypeError):
         new_staff = None
 
@@ -1513,7 +1525,7 @@ def create_department():
 @role_required('management')
 def update_department(dept_id):
     """Updates department name, description, or active status. Preserves historical complaints."""
-    dept = Department.query.get(dept_id)
+    dept = db.session.get(Department, dept_id)
     if not dept:
         return jsonify({"success": False, "message": "Department not found."}), 404
 
@@ -1669,10 +1681,10 @@ def get_reports():
     in_progress = sum(1 for c in complaints if c.status == 'In Progress')
     assigned = sum(1 for c in complaints if c.status == 'Assigned')
     submitted = sum(1 for c in complaints if c.status == 'Submitted')
-    overdue = sum(1 for c in complaints if c.status in ['Assigned', 'In Progress', 'Submitted'] and (c.is_overdue or (c.sla_deadline and now > _to_utc(c.sla_deadline))))
+    overdue = sum(1 for c in complaints if c.status in ['Assigned', 'In Progress', 'Submitted'] and (c.is_overdue or (c.sla_deadline is not None and now > _to_utc(c.sla_deadline))))
 
     completed = [c for c in complaints if c.status in ['Resolved', 'Closed']]
-    within_sla = sum(1 for c in completed if c.resolved_at and c.sla_deadline and _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline))
+    within_sla = sum(1 for c in completed if c.resolved_at is not None and c.sla_deadline is not None and _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline))
     sla_compliance_pct = round((within_sla / len(completed) * 100), 1) if completed else 100.0
 
     res_times = [c.resolution_time_minutes for c in completed if c.resolution_time_minutes is not None]
@@ -1704,7 +1716,7 @@ def get_sla_analytics():
     total = Complaint.query.count()
     completed = Complaint.query.filter(Complaint.status.in_(['Resolved', 'Closed'])).all()
     
-    within_sla = sum(1 for c in completed if c.resolved_at and c.sla_deadline and _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline))
+    within_sla = sum(1 for c in completed if c.resolved_at is not None and c.sla_deadline is not None and _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline))
     after_sla = len(completed) - within_sla
     currently_overdue = Complaint.query.filter(
         Complaint.status.in_(['Assigned', 'In Progress', 'Submitted']),
@@ -1854,7 +1866,7 @@ def export_departments_csv():
         ).count()
 
         completed = dept_complaints.filter(Complaint.status.in_(['Resolved', 'Closed'])).all()
-        within_sla = sum(1 for c in completed if c.resolved_at and c.sla_deadline and _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline))
+        within_sla = sum(1 for c in completed if c.resolved_at is not None and c.sla_deadline is not None and _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline))
         sla_pct = round((within_sla / len(completed) * 100), 1) if completed else 100.0
         res_times = [c.resolution_time_minutes for c in completed if c.resolution_time_minutes is not None]
         avg_res = round(sum(res_times) / len(res_times), 1) if res_times else 0.0
@@ -1899,7 +1911,7 @@ def export_staff_csv():
         ).count()
 
         completed = tickets.filter(Complaint.status.in_(['Resolved', 'Closed'])).all()
-        within_sla = sum(1 for c in completed if c.resolved_at and c.sla_deadline and _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline))
+        within_sla = sum(1 for c in completed if c.resolved_at is not None and c.sla_deadline is not None and _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline))
         sla_pct = round((within_sla / len(completed) * 100), 1) if completed else 100.0
         res_times = [c.resolution_time_minutes for c in completed if c.resolution_time_minutes is not None]
         avg_res = round(sum(res_times) / len(res_times), 1) if res_times else 0.0
@@ -1944,7 +1956,7 @@ def export_sla_csv():
     for c in complaints:
         sla_met = "N/A"
         if c.resolved_at and c.sla_deadline:
-            sla_met = "YES" if _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline) else "NO"
+            sla_met = "YES" if _to_utc(c.resolved_at) <= _to_utc(c.sla_deadline) else "NO"  # type: ignore[operator]  # None already guarded on line above
 
         writer.writerow([
             c.complaint_number,

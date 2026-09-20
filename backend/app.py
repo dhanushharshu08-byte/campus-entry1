@@ -165,6 +165,49 @@ def create_app(config_class=Config):
         except Exception as err:
             logger.debug(f"System settings init notice: {err}")
 
+        # Ensure baseline demo accounts always exist
+        if not app.config.get('TESTING', False) and os.environ.get('FLASK_ENV') != 'testing' and os.environ.get('TESTING') != 'true':
+            try:
+                from models.user import User
+                from models.department import Department
+                elec_dept = Department.query.filter_by(name='Electrical').first()
+
+                demo_accounts = [
+                    {'name': 'Campus Administrator', 'email': 'admin@college.edu', 'role': 'management', 'emp_id': 'MGMT-001', 'pass': 'Admin@123', 'dept': None, 'dept_id': None},
+                    {'name': 'Central Maintenance Staff', 'email': 'maintenance@college.edu', 'role': 'maintenance', 'emp_id': 'TECH-MAIN-01', 'pass': 'Tech@123', 'dept': None, 'dept_id': None},
+                    {'name': 'Electrician Dave', 'email': 'electrician@college.edu', 'role': 'maintenance', 'emp_id': 'TECH-ELEC-01', 'pass': 'Tech@123', 'dept': 'Electrical', 'dept_id': elec_dept.id if elec_dept else None},
+                    {'name': 'John Doe (Student)', 'email': 'student@acetcbe.edu.in', 'role': 'student', 'emp_id': 'STU-2026-042', 'pass': 'Student@123', 'dept': None, 'dept_id': None},
+                    {'name': 'John Doe (Student)', 'email': 'student@college.edu', 'role': 'student', 'emp_id': 'STU-2026-042', 'pass': 'Student@123', 'dept': None, 'dept_id': None},
+                    {'name': 'Prof. Sarah Smith (Faculty)', 'email': 'faculty@acetcbe.edu.in', 'role': 'faculty', 'emp_id': 'FAC-ENG-108', 'pass': 'Faculty@123', 'dept': None, 'dept_id': None},
+                    {'name': 'Prof. Sarah Smith (Faculty)', 'email': 'faculty@college.edu', 'role': 'faculty', 'emp_id': 'FAC-ENG-108', 'pass': 'Faculty@123', 'dept': None, 'dept_id': None}
+                ]
+                for acc in demo_accounts:
+                    raw_email = acc.get('email') or ''
+                    acc_email = str(raw_email).strip().lower()
+                    if not acc_email:
+                        continue
+                    existing = User.query.filter(db.func.lower(User.email) == acc_email).first()
+                    if not existing:
+                        new_u = User(
+                            name=acc['name'],
+                            email=acc['email'],
+                            role=acc['role'],
+                            employee_or_student_id=acc['emp_id'],
+                            department=acc.get('dept'),
+                            department_id=acc.get('dept_id'),
+                            is_active=True
+                        )
+                        new_u.set_password(acc['pass'])
+                        db.session.add(new_u)
+                    else:
+                        if acc.get('dept') and not existing.department:
+                            existing.department = acc['dept']
+                            existing.department_id = acc.get('dept_id')
+                db.session.commit()
+            except Exception as seed_err:
+                db.session.rollback()
+                logger.debug(f"Demo accounts init notice: {seed_err}")
+
     # Start background SLA worker thread if not running automated unit tests or serverless
     if not app.config.get('TESTING', False) and not os.environ.get('VERCEL'):
         try:
@@ -177,12 +220,14 @@ def create_app(config_class=Config):
 # Socket.IO Event Handlers
 @socketio.on('connect')
 def handle_connect():
-    logger.info(f"Socket.IO client connected: {request.sid}")
-    emit('connection_response', {'data': 'Connected to College Helpdesk Realtime Hub', 'sid': request.sid})
+    sid = getattr(request, 'sid', 'unknown')  # flask_socketio injects .sid at runtime
+    logger.info(f"Socket.IO client connected: {sid}")
+    emit('connection_response', {'data': 'Connected to College Helpdesk Realtime Hub', 'sid': sid})
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    logger.info(f"Socket.IO client disconnected: {request.sid}")
+    sid = getattr(request, 'sid', 'unknown')  # flask_socketio injects .sid at runtime
+    logger.info(f"Socket.IO client disconnected: {sid}")
 
 @socketio.on('join_user_room')
 def handle_join_user_room(data):

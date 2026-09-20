@@ -67,7 +67,7 @@ def create_complaint():
             dept_id_str = dept_id_raw.strip()
             if dept_id_str.isdigit():
                 department_id = int(dept_id_str)
-                dept = Department.query.get(department_id)
+                dept = db.session.get(Department, department_id)
             else:
                 dept = Department.query.filter_by(name=dept_id_str).first()
                 if dept:
@@ -269,7 +269,7 @@ def get_complaint(complaint_id):
     Retrieve single complaint details.
     Enforces ownership authorization: students and faculty can only view their own tickets.
     """
-    complaint = Complaint.query.get(complaint_id)
+    complaint = db.session.get(Complaint, complaint_id)
     if not complaint:
         return jsonify({
             "success": False,
@@ -305,7 +305,7 @@ def close_complaint(complaint_id):
     Closes a resolved grievance ticket.
     Strictly authorized for original complaint creator when status is 'Resolved'.
     """
-    complaint = Complaint.query.get(complaint_id)
+    complaint = db.session.get(Complaint, complaint_id)
     if not complaint:
         return jsonify({"success": False, "message": "Complaint not found."}), 404
 
@@ -387,7 +387,7 @@ def reopen_complaint(complaint_id):
     Strictly authorized for original complaint creator when status is 'Resolved'.
     Expects JSON body containing 'reason' (min 10, max 1000 characters).
     """
-    complaint = Complaint.query.get(complaint_id)
+    complaint = db.session.get(Complaint, complaint_id)
     if not complaint:
         return jsonify({"success": False, "message": "Complaint not found."}), 404
 
@@ -482,7 +482,7 @@ def track_public_complaint(complaint_no):
     ).first()
 
     if not complaint and cleaned_no.isdigit():
-        complaint = Complaint.query.get(int(cleaned_no))
+        complaint = db.session.get(Complaint, int(cleaned_no))
 
     if not complaint:
         return jsonify({
@@ -515,9 +515,9 @@ def track_public_complaint(complaint_no):
             "status": complaint.status,
             "department": dept_name,
             "created_at": complaint.created_at.isoformat() if complaint.created_at else None,
-            "sla_target_hours": complaint.sla_target_hours,
+            "sla_target_hours": complaint.calculate_sla_hours(),
             "sla_deadline": complaint.sla_deadline.isoformat() if complaint.sla_deadline else None,
-            "is_breached": complaint.is_breached,
+            "is_breached": complaint.is_overdue,
             "resolved_at": complaint.resolved_at.isoformat() if complaint.resolved_at else None,
             "closed_at": complaint.closed_at.isoformat() if complaint.closed_at else None,
             "resolution_remarks": complaint.resolution_remarks if complaint.status in ['Resolved', 'Closed'] else None,

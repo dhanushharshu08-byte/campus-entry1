@@ -11,6 +11,7 @@ import uuid
 import os
 import sys
 import sqlite3
+import time
 
 BACKEND_URL = "http://127.0.0.1:5000"
 FRONTEND_URL = "http://localhost:5173"
@@ -115,24 +116,52 @@ def run_15_point_e2e_test():
     # 1. START APPLICATION & HEALTH CHECK
     # -------------------------------------------------------------
     print("\n[TEST 1/15] START APPLICATION & CONNECTIVITY")
+    RETRY_SECONDS = 10  # max wait for each server to become ready
+
+    # --- Independent backend check with retry ---
+    backend_ok = False
+    backend_error = None
+    health_body = {}
+    for _attempt in range(RETRY_SECONDS):
+        try:
+            health_opener = make_session()
+            code, health_body, _ = get_json(health_opener, "/api/health")
+            if code == 200 and health_body.get('status') == 'ok' and health_body.get('database') == 'connected':
+                backend_ok = True
+                break
+            backend_error = f"Unexpected health response (HTTP {code}): {health_body}"
+        except Exception as exc:
+            backend_error = str(exc)
+        time.sleep(1)
+
+    # --- Independent frontend check with retry ---
+    frontend_ok = False
+    frontend_error = None
+    for _attempt in range(RETRY_SECONDS):
+        try:
+            with urllib.request.urlopen(
+                urllib.request.Request(FRONTEND_URL), timeout=5
+            ) as resp:
+                if resp.status == 200:
+                    frontend_ok = True
+                    break
+                frontend_error = f"HTTP {resp.status} (expected 200)"
+        except Exception as exc:
+            frontend_error = str(exc)
+        time.sleep(1)
+
+    # --- Both must be reachable for PASS ---
     try:
-        # Frontend check
-        req = urllib.request.Request(FRONTEND_URL)
-        with urllib.request.urlopen(req) as resp:
-            frontend_ok = resp.status == 200
-        
-        # Backend health check
-        health_opener = make_session()
-        code, health_body, _ = get_json(health_opener, "/api/health")
-        backend_ok = (code == 200 and health_body.get('status') == 'ok' and health_body.get('database') == 'connected')
-        
-        assert frontend_ok and backend_ok
+        assert backend_ok, f"Backend not ready: {backend_error}"
+        assert frontend_ok, f"Frontend not ready: {frontend_error}"
         results['1_START_APPLICATION'] = 'PASS'
-        print("  -> Frontend running on http://localhost:5173 (HTTP 200)")
         print(f"  -> Backend running on http://127.0.0.1:5000 (/api/health: {health_body})")
+        print("  -> Frontend running on http://localhost:5173 (HTTP 200)")
         print("  -> Result: PASS")
     except Exception as e:
         results['1_START_APPLICATION'] = f'FAIL: {e}'
+        print(f"  -> Backend reachable: {backend_ok}" + ("" if backend_ok else f" | Error: {backend_error}"))
+        print(f"  -> Frontend reachable: {frontend_ok}" + ("" if frontend_ok else f" | Error: {frontend_error}"))
         print(f"  -> Result: FAIL ({e})")
 
     # -------------------------------------------------------------
