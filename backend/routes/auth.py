@@ -149,23 +149,13 @@ def login():
     """User login endpoint validating credentials and establishing session."""
     data = request.get_json() or {}
 
-    email = (data.get('email') or '').strip().lower()
+    raw_input = (data.get('email') or data.get('identifier') or data.get('username') or '').strip()
     password = data.get('password') or ''
 
-    if not email:
+    if not raw_input:
         return jsonify({
             "success": False,
-            "message": "Email address is required."
-        }), 400
-
-    # If the user supplied a student/staff ID without domain (e.g. '720325243012' or '25ad012'), append official domain
-    if '@' not in email:
-        email = f"{email}@{OFFICIAL_COLLEGE_DOMAIN}"
-
-    if not EMAIL_REGEX.match(email):
-        return jsonify({
-            "success": False,
-            "message": "Invalid email address format."
+            "message": "Email address or ID is required."
         }), 400
 
     if not password:
@@ -174,23 +164,40 @@ def login():
             "message": "Password is required."
         }), 400
 
-    email_clean = email.strip().lower()
-    email_prefix = email_clean.split('@')[0]
+    input_clean = raw_input.lower()
+    if '@' in input_clean:
+        email_prefix = input_clean.split('@')[0].strip()
+        email_full = input_clean
+    else:
+        email_prefix = input_clean
+        email_full = f"{input_clean}@{OFFICIAL_COLLEGE_DOMAIN}"
 
-    # Look up user by exact email, or by employee/student ID matching full input or prefix
+    other_domain = 'college.edu' if OFFICIAL_COLLEGE_DOMAIN in email_full else OFFICIAL_COLLEGE_DOMAIN
+    alt_email = f"{email_prefix}@{other_domain}"
+
+    # Robust multi-vector lookup:
+    # 1. Exact email match (case-insensitive & trimmed)
+    # 2. Raw input matching email
+    # 3. Alternate college domain match (acetcbe.edu.in <-> college.edu)
+    # 4. Student Roll ID / Employee ID matching raw input
+    # 5. Student Roll ID / Employee ID matching email prefix
+    # 6. Email prefix match across institutional domains
     user = User.query.filter(
         db.or_(
-            db.func.lower(User.email) == email_clean,
-            db.func.lower(User.employee_or_student_id) == email_clean,
-            db.func.lower(User.employee_or_student_id) == email_prefix
+            db.func.lower(db.func.trim(User.email)) == email_full,
+            db.func.lower(db.func.trim(User.email)) == input_clean,
+            db.func.lower(db.func.trim(User.email)) == alt_email,
+            db.func.lower(db.func.trim(User.employee_or_student_id)) == input_clean,
+            db.func.lower(db.func.trim(User.employee_or_student_id)) == email_prefix,
+            db.func.lower(db.func.trim(User.email)).like(f"{email_prefix}@%")
         )
     ).first()
 
-    # Fallback lookup: check alternate official domain (acetcbe.edu.in <-> college.edu)
+    # Fallback lookup by full user name if user entered their full name
     if not user:
-        other_domain = 'college.edu' if OFFICIAL_COLLEGE_DOMAIN in email_clean else OFFICIAL_COLLEGE_DOMAIN
-        alternate_email = f"{email_prefix}@{other_domain}"
-        user = User.query.filter(db.func.lower(User.email) == alternate_email).first()
+        user = User.query.filter(
+            db.func.lower(db.func.trim(User.name)) == input_clean
+        ).first()
 
     # Electrician / Specialist maintenance alias fallback
     if not user and email_prefix in ['electrician', 'tech-elec-01']:
@@ -199,7 +206,7 @@ def login():
             db.or_(User.department == 'Electrical', db.func.lower(User.email).like('%electrician%')),
             User.is_active == True
         ).first()
-        if not user and email_clean in ['electrician@college.edu', 'electrician@acetcbe.edu.in']:
+        if not user and email_full in ['electrician@college.edu', 'electrician@acetcbe.edu.in']:
             try:
                 from models.department import Department
                 elec_dept = Department.query.filter_by(name='Electrical').first()
@@ -221,7 +228,7 @@ def login():
     # Management / Admin role alias fallback (e.g. administrator@college.edu, management, admin)
     if not user and email_prefix in ['admin', 'administrator', 'management', 'mgmt', 'mgmt-001', 'mgmt001']:
         user = User.query.filter(User.role == 'management', User.is_active == True).order_by(User.id.asc()).first()
-        if not user and email_clean in ['admin@college.edu', 'admin@acetcbe.edu.in']:
+        if not user and email_full in ['admin@college.edu', 'admin@acetcbe.edu.in']:
             try:
                 user = User(
                     name='Campus Administrator',
@@ -239,7 +246,7 @@ def login():
     # Maintenance role alias fallback (e.g. maintenance@acetcbe.edu.in, tech-main-01)
     if not user and email_prefix in ['maintenance', 'maint', 'tech', 'technician', 'tech-main-01']:
         user = User.query.filter(User.role == 'maintenance', User.is_active == True).order_by(User.id.asc()).first()
-        if not user and email_clean in ['maintenance@college.edu', 'maintenance@acetcbe.edu.in']:
+        if not user and email_full in ['maintenance@college.edu', 'maintenance@acetcbe.edu.in']:
             try:
                 user = User(
                     name='Central Maintenance Staff',
@@ -255,15 +262,15 @@ def login():
                 db.session.rollback()
 
     # Student default demo alias fallback
-    if not user and email_clean in ['student@college.edu', 'student@acetcbe.edu.in']:
+    if not user and input_clean in ['student@college.edu', 'student@acetcbe.edu.in', 'student']:
         user = User.query.filter(User.role == 'student', db.func.lower(User.email).in_(['student@college.edu', 'student@acetcbe.edu.in'])).first()
 
     # Faculty default demo alias fallback
-    if not user and email_clean in ['faculty@college.edu', 'faculty@acetcbe.edu.in']:
+    if not user and input_clean in ['faculty@college.edu', 'faculty@acetcbe.edu.in', 'faculty']:
         user = User.query.filter(User.role == 'faculty', db.func.lower(User.email).in_(['faculty@college.edu', 'faculty@acetcbe.edu.in'])).first()
 
     if not user:
-        if not is_valid_college_email(email):
+        if not is_valid_college_email(email_full):
             return jsonify({
                 "success": False,
                 "message": f"Please use your official college email address (@{OFFICIAL_COLLEGE_DOMAIN} or @college.edu)."
@@ -272,7 +279,7 @@ def login():
         log_audit(
             action='Login Failed - Account Not Found',
             entity_type='Auth',
-            old_value=f"Account not found for email: {email}"
+            old_value=f"Account not found for email: {email_full}"
         )
         try:
             db.session.commit()
