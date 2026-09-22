@@ -122,7 +122,7 @@ const CreateMaintenanceStaffModal = ({ isOpen, onClose, onSuccess }) => {
       }
     } catch (err) {
       console.error('Create maintenance staff error:', err);
-      setErrorMessage(err.data?.message || err.message || 'An unexpected error occurred while creating the account.');
+      setErrorMessage(err.message || err.response?.data?.message || err.data?.message || 'An unexpected error occurred while creating the account.');
     } finally {
       setSubmitting(false);
     }
@@ -152,8 +152,8 @@ const CreateMaintenanceStaffModal = ({ isOpen, onClose, onSuccess }) => {
         <form onSubmit={handleSubmit}>
           <div className="modal-body" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
             {errorMessage && (
-              <div className="alert alert-danger" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem 1rem', fontSize: '0.85rem' }}>
-                <AlertCircle size={16} style={{ flexShrink: 0 }} />
+              <div className="alert alert-danger" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', padding: '0.75rem 1rem', fontSize: '0.85rem' }}>
+                <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
                 <span>{errorMessage}</span>
               </div>
             )}
@@ -164,11 +164,13 @@ const CreateMaintenanceStaffModal = ({ isOpen, onClose, onSuccess }) => {
                 Full Name <span style={{ color: '#dc2626' }}>*</span>
               </label>
               <div style={{ position: 'relative' }}>
+                <UserIcon size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-slate-400)' }} />
                 <input
                   type="text"
                   name="name"
                   required
                   className="form-control"
+                  style={{ paddingLeft: '2.4rem' }}
                   placeholder="e.g. Ramesh Kumar (Electrician)"
                   value={formData.name}
                   onChange={handleChange}
@@ -182,16 +184,20 @@ const CreateMaintenanceStaffModal = ({ isOpen, onClose, onSuccess }) => {
               <label className="form-label" style={{ fontSize: '0.825rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
                 Email Address <span style={{ color: '#dc2626' }}>*</span>
               </label>
-              <input
-                type="email"
-                name="email"
-                required
-                className="form-control"
-                placeholder="e.g. ramesh.maintenance@college.edu"
-                value={formData.email}
-                onChange={handleChange}
-                disabled={submitting}
-              />
+              <div style={{ position: 'relative' }}>
+                <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-slate-400)' }} />
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  className="form-control"
+                  style={{ paddingLeft: '2.4rem' }}
+                  placeholder="e.g. ramesh.maintenance@college.edu"
+                  value={formData.email}
+                  onChange={handleChange}
+                  disabled={submitting}
+                />
+              </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-slate-500)', marginTop: '0.25rem' }}>
                 This email will be used for Maintenance portal login and complaint assignments.
               </div>
@@ -203,34 +209,42 @@ const CreateMaintenanceStaffModal = ({ isOpen, onClose, onSuccess }) => {
                 <label className="form-label" style={{ fontSize: '0.825rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
                   Assigned Department <span style={{ color: '#dc2626' }}>*</span>
                 </label>
-                <select
-                  name="department_id"
-                  required
-                  className="form-control"
-                  value={formData.department_id}
-                  onChange={handleChange}
-                  disabled={submitting || loadingDepts}
-                >
-                  <option value="">{loadingDepts ? 'Loading departments...' : 'Select Department...'}</option>
-                  {departments.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
+                <div style={{ position: 'relative' }}>
+                  <Building size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-slate-400)', pointerEvents: 'none' }} />
+                  <select
+                    name="department_id"
+                    required
+                    className="form-control"
+                    style={{ paddingLeft: '2.4rem' }}
+                    value={formData.department_id}
+                    onChange={handleChange}
+                    disabled={submitting || loadingDepts}
+                  >
+                    <option value="">{loadingDepts ? 'Loading departments...' : 'Select Department...'}</option>
+                    {departments.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div>
                 <label className="form-label" style={{ fontSize: '0.825rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
                   Contact Phone
                 </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  className="form-control"
-                  placeholder="+91 98765 43210"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  disabled={submitting}
-                />
+                <div style={{ position: 'relative' }}>
+                  <Phone size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-slate-400)' }} />
+                  <input
+                    type="tel"
+                    name="phone"
+                    className="form-control"
+                    style={{ paddingLeft: '2.4rem' }}
+                    placeholder="+91 98765 43210"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    disabled={submitting}
+                  />
+                </div>
               </div>
             </div>
 
@@ -240,34 +254,42 @@ const CreateMaintenanceStaffModal = ({ isOpen, onClose, onSuccess }) => {
                 <label className="form-label" style={{ fontSize: '0.825rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
                   Password (min 8 chars) <span style={{ color: '#dc2626' }}>*</span>
                 </label>
-                <input
-                  type="password"
-                  name="password"
-                  required
-                  minLength={8}
-                  className="form-control"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleChange}
-                  disabled={submitting}
-                />
+                <div style={{ position: 'relative' }}>
+                  <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-slate-400)' }} />
+                  <input
+                    type="password"
+                    name="password"
+                    required
+                    minLength={8}
+                    className="form-control"
+                    style={{ paddingLeft: '2.4rem' }}
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={handleChange}
+                    disabled={submitting}
+                  />
+                </div>
               </div>
 
               <div>
                 <label className="form-label" style={{ fontSize: '0.825rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
                   Confirm Password <span style={{ color: '#dc2626' }}>*</span>
                 </label>
-                <input
-                  type="password"
-                  name="confirm_password"
-                  required
-                  minLength={8}
-                  className="form-control"
-                  placeholder="••••••••"
-                  value={formData.confirm_password}
-                  onChange={handleChange}
-                  disabled={submitting}
-                />
+                <div style={{ position: 'relative' }}>
+                  <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-slate-400)' }} />
+                  <input
+                    type="password"
+                    name="confirm_password"
+                    required
+                    minLength={8}
+                    className="form-control"
+                    style={{ paddingLeft: '2.4rem' }}
+                    placeholder="••••••••"
+                    value={formData.confirm_password}
+                    onChange={handleChange}
+                    disabled={submitting}
+                  />
+                </div>
               </div>
             </div>
 

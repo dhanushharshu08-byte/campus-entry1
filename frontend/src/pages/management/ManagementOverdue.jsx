@@ -97,7 +97,7 @@ const ManagementOverdue = () => {
                     <td>
                       <span className="badge" style={{ backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                         <AlertTriangle size={12} />
-                        +{c.hours_overdue} Hours Overdue
+                        +{c.hours_overdue != null ? Math.round(c.hours_overdue) : (c.remaining_seconds ? Math.max(1, Math.round(Math.abs(c.remaining_seconds) / 3600)) : 1)} Hours Overdue
                       </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>

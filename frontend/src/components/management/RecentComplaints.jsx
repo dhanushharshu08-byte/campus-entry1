@@ -4,6 +4,8 @@ import StatusBadge from '../StatusBadge';
 import { Eye, ArrowRight, FileText } from 'lucide-react';
 
 const RecentComplaints = ({ complaints = [] }) => {
+  const safeComplaints = Array.isArray(complaints) ? complaints : [];
+
   return (
     <div className="card">
       <div className="card-header">
@@ -37,8 +39,8 @@ const RecentComplaints = ({ complaints = [] }) => {
             </tr>
           </thead>
           <tbody>
-            {complaints.length > 0 ? (
-              complaints.map((c) => (
+            {safeComplaints.length > 0 ? (
+              safeComplaints.map((c) => (
                 <tr key={c.id}>
                   <td>
                     <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--color-brand-700)', fontSize: '0.85rem' }}>
@@ -69,12 +71,12 @@ const RecentComplaints = ({ complaints = [] }) => {
                     <StatusBadge status={c.status} />
                   </td>
                   <td>
-                    <div style={{ fontSize: '0.825rem', color: 'var(--color-slate-900)' }}>{c.creator?.name || 'User'}</div>
-                    <div style={{ fontSize: '0.725rem', color: 'var(--color-slate-500)' }}>{c.creator?.role}</div>
+                    <div style={{ fontSize: '0.825rem', color: 'var(--color-slate-900)' }}>{c.creator?.name || c.created_by_name || 'User'}</div>
+                    <div style={{ fontSize: '0.725rem', color: 'var(--color-slate-500)', textTransform: 'capitalize' }}>{c.creator?.role || c.created_by_role || ''}</div>
                   </td>
                   <td>
-                    <span style={{ fontSize: '0.825rem', color: c.assignee ? 'var(--color-slate-900)' : 'var(--color-slate-400)' }}>
-                      {c.assignee?.name || 'Unassigned'}
+                    <span style={{ fontSize: '0.825rem', color: (c.assignee || c.assigned_to_name) ? 'var(--color-slate-900)' : 'var(--color-slate-400)' }}>
+                      {c.assignee?.name || c.assigned_to_name || 'Unassigned'}
                     </span>
                   </td>
                   <td>

@@ -148,6 +148,7 @@ const MaintenanceDashboard = () => {
 
   // Real-time Socket.IO Listeners
   useEffect(() => {
+    if (!socket) return;
     const handleComplaintCreated = (data) => {
       setNewComplaintAlert({
         complaint_number: data.complaint_number || 'CH-NEW',

@@ -15,9 +15,7 @@ import {
   CheckCircle2,
   GraduationCap,
   School,
-  Wrench,
-  ShieldCheck,
-  Building2,
+  Info,
   Check,
   X,
   Sparkles,
@@ -347,7 +345,7 @@ const RegisterPageContent = () => {
           </button>
         </div>
 
-        {/* Role Selection Tabs (Student and Faculty can self-register; staff accounts are issued by admin) */}
+        {/* Role Selection Tabs — Student and Faculty only */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
           {/* Student */}
           <button
@@ -375,7 +373,7 @@ const RegisterPageContent = () => {
               <span>Student Account</span>
             </div>
             <span style={{ fontSize: '0.68rem', fontWeight: 500, color: 'var(--color-slate-500)', lineHeight: 1.25 }}>
-              Hostels, labs & classrooms
+              Hostels, labs &amp; classrooms
             </span>
           </button>
 
@@ -405,69 +403,33 @@ const RegisterPageContent = () => {
               <span>Faculty Account</span>
             </div>
             <span style={{ fontSize: '0.68rem', fontWeight: 500, color: 'var(--color-slate-500)', lineHeight: 1.25 }}>
-              Staff rooms & dept labs
+              Staff rooms &amp; dept labs
             </span>
           </button>
+        </div>
 
-          {/* Maintenance */}
-          <button
-            type="button"
-            onClick={() => setRole('maintenance')}
-            style={{
-              padding: '0.65rem 0.75rem',
-              borderRadius: '10px',
-              border: `2px solid ${role === 'maintenance' ? '#d97706' : 'var(--color-slate-200)'}`,
-              background: role === 'maintenance' ? '#d9770612' : '#fff',
-              color: role === 'maintenance' ? '#d97706' : 'var(--color-slate-700)',
-              fontWeight: 700,
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              gap: '0.2rem',
-              transition: 'all 0.15s ease',
-              textAlign: 'left'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Wrench size={16} color={role === 'maintenance' ? '#d97706' : 'var(--color-slate-500)'} />
-              <span>Maintenance Staff</span>
-            </div>
-            <span style={{ fontSize: '0.68rem', fontWeight: 500, color: 'var(--color-slate-500)', lineHeight: 1.25 }}>
-              Repairs & resolution desk
-            </span>
-          </button>
-
-          {/* Management */}
-          <button
-            type="button"
-            onClick={() => setRole('management')}
-            style={{
-              padding: '0.65rem 0.75rem',
-              borderRadius: '10px',
-              border: `2px solid ${role === 'management' ? '#2563eb' : 'var(--color-slate-200)'}`,
-              background: role === 'management' ? '#2563eb12' : '#fff',
-              color: role === 'management' ? '#2563eb' : 'var(--color-slate-700)',
-              fontWeight: 700,
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              gap: '0.2rem',
-              transition: 'all 0.15s ease',
-              textAlign: 'left'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <ShieldCheck size={16} color={role === 'management' ? '#2563eb' : 'var(--color-slate-500)'} />
-              <span>Admin / Management</span>
-            </div>
-            <span style={{ fontSize: '0.68rem', fontWeight: 500, color: 'var(--color-slate-500)', lineHeight: 1.25 }}>
-              Estate oversight & controls
-            </span>
-          </button>
+        {/* Staff account advisory notice */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.55rem',
+            padding: '0.7rem 0.9rem',
+            borderRadius: '10px',
+            background: 'var(--color-brand-50)',
+            border: '1px solid var(--color-brand-100)',
+            marginBottom: '1rem',
+            fontSize: '0.78rem',
+            color: 'var(--color-brand-800)',
+            lineHeight: 1.5,
+          }}
+        >
+          <Info size={15} style={{ flexShrink: 0, marginTop: '0.1rem', color: 'var(--color-brand-600)' }} />
+          <span>
+            <strong>Maintenance technicians</strong> and <strong>Management</strong> administrative accounts are
+            provisioned directly by Campus Administration via the Staff Management portal.
+            Please contact your campus IT administrator if you need access.
+          </span>
         </div>
 
         {/* Error Alert */}

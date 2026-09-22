@@ -62,6 +62,7 @@ const FacultyDashboard = () => {
 
   // Real-time listener for Socket.IO updates across all complaint state changes
   useEffect(() => {
+    if (!socket) return;
     const handleRealtimeUpdate = () => {
       fetchDashboardData();
     };

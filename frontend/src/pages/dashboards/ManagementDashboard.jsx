@@ -11,6 +11,7 @@ import StaffWorkloadChart from '../../components/management/StaffWorkloadChart';
 import RecentComplaints from '../../components/management/RecentComplaints';
 import LiveActivity from '../../components/management/LiveActivity';
 import CreateMaintenanceStaffModal from '../../components/management/CreateMaintenanceStaffModal';
+import CreateManagementStaffModal from '../../components/management/CreateManagementStaffModal';
 import { COLLEGE_CONFIG } from '../../config/collegeConfig';
 import { 
   Building2, 
@@ -44,6 +45,7 @@ const ManagementDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreateStaffModal, setShowCreateStaffModal] = useState(false);
+  const [showCreateMgmtModal, setShowCreateMgmtModal] = useState(false);
   const [staffCreatedFeedback, setStaffCreatedFeedback] = useState(null);
 
   // Join management room
@@ -90,7 +92,7 @@ const ManagementDashboard = () => {
         setStaff(staffRes.value.data.staff || []);
       }
       if (activityRes.status === 'fulfilled' && activityRes.value.data?.success) {
-        setActivities(activityRes.value.data.activities || []);
+        setActivities(activityRes.value.data.activity || activityRes.value.data.activities || []);
       }
       if (slaRes.status === 'fulfilled' && slaRes.value.data?.success) {
         setSlaSummary(slaRes.value.data.analytics || null);
@@ -194,23 +196,40 @@ const ManagementDashboard = () => {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => setShowCreateStaffModal(true)}
+              className="btn btn-primary"
+              style={{ padding: '0.6rem 1rem', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <Plus size={15} />
+              <span>+ Maintenance Staff</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCreateMgmtModal(true)}
+              className="btn"
+              style={{ backgroundColor: 'rgba(59, 130, 246, 0.3)', color: '#ffffff', border: '1px solid rgba(96, 165, 250, 0.5)', padding: '0.6rem 1rem', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <Shield size={15} />
+              <span>+ Management Admin</span>
+            </button>
             <Link 
               to="/management/complaints" 
-              className="btn btn-primary"
-              style={{ padding: '0.6rem 1.2rem', fontSize: '0.875rem' }}
+              className="btn"
+              style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.2)', padding: '0.6rem 1rem', fontSize: '0.875rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
             >
               <FileText size={15} />
-              <span>All Complaints</span>
+              <span>Complaints</span>
             </Link>
             <button 
               onClick={loadAllDashboardData} 
-              className="btn btn-secondary" 
-              style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.2)', padding: '0.6rem 1.1rem', fontSize: '0.875rem' }}
+              className="btn" 
+              style={{ backgroundColor: 'rgba(255,255,255,0.1)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.2)', padding: '0.6rem 0.9rem', fontSize: '0.875rem' }}
               title="Refresh Live Metrics"
             >
               <RefreshCw size={15} />
-              <span>Refresh</span>
             </button>
           </div>
         </div>
@@ -411,6 +430,16 @@ const ManagementDashboard = () => {
         onClose={() => setShowCreateStaffModal(false)}
         onSuccess={(createdUser) => {
           setStaffCreatedFeedback(`Maintenance staff account created successfully for ${createdUser.name} (${createdUser.email}).`);
+          loadAllDashboardData();
+        }}
+      />
+
+      {/* Modal: Create Management Administrator */}
+      <CreateManagementStaffModal
+        isOpen={showCreateMgmtModal}
+        onClose={() => setShowCreateMgmtModal(false)}
+        onSuccess={(createdUser) => {
+          setStaffCreatedFeedback(`Management administrator account created successfully for ${createdUser.name} (${createdUser.email}).`);
           loadAllDashboardData();
         }}
       />

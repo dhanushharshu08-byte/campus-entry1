@@ -2,12 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { managementApi } from '../../services/api';
 import StaffWorkloadChart from '../../components/management/StaffWorkloadChart';
 import CreateMaintenanceStaffModal from '../../components/management/CreateMaintenanceStaffModal';
-import { Users, Mail, Wrench, AlertTriangle, CheckCircle2, Plus, RefreshCw } from 'lucide-react';
+import CreateManagementStaffModal from '../../components/management/CreateManagementStaffModal';
+import { Users, Mail, Wrench, AlertTriangle, CheckCircle2, Plus, RefreshCw, Shield } from 'lucide-react';
 
 const ManagementStaff = () => {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateMgmtModal, setShowCreateMgmtModal] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
   const fetchStaff = useCallback(async () => {
@@ -57,7 +59,7 @@ const ManagementStaff = () => {
             Real-time operational tracking of active maintenance personnel, assigned ticket loads, and resolution performance.
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={() => setShowCreateModal(true)}
@@ -66,6 +68,15 @@ const ManagementStaff = () => {
           >
             <Plus size={16} />
             <span>+ Create Maintenance Staff</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowCreateMgmtModal(true)}
+            className="btn btn-secondary"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}
+          >
+            <Shield size={16} color="#2563eb" />
+            <span>+ Create Management Staff</span>
           </button>
           <button 
             type="button" 
@@ -153,6 +164,15 @@ const ManagementStaff = () => {
         onClose={() => setShowCreateModal(false)}
         onSuccess={(createdUser) => {
           setFeedback(`Maintenance staff account created successfully for ${createdUser.name} (${createdUser.email}).`);
+          fetchStaff();
+        }}
+      />
+
+      <CreateManagementStaffModal
+        isOpen={showCreateMgmtModal}
+        onClose={() => setShowCreateMgmtModal(false)}
+        onSuccess={(createdUser) => {
+          setFeedback(`Management administrator account created successfully for ${createdUser.name} (${createdUser.email}).`);
           fetchStaff();
         }}
       />

@@ -2,7 +2,8 @@ import React from 'react';
 import { Users, AlertTriangle } from 'lucide-react';
 
 const StaffWorkloadChart = ({ staff = [] }) => {
-  const maxActive = Math.max(...staff.map(s => s.active_complaints), 1);
+  const safeStaff = Array.isArray(staff) ? staff : [];
+  const maxActive = Math.max(...safeStaff.map(s => Number(s.active_complaints) || 0), 1);
 
   return (
     <div className="card h-100">
@@ -14,15 +15,16 @@ const StaffWorkloadChart = ({ staff = [] }) => {
       </div>
 
       <div style={{ padding: '1.25rem' }}>
-        {staff.length === 0 ? (
+        {safeStaff.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-slate-400)', fontSize: '0.875rem' }}>
             No active maintenance staff members registered.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            {staff.map((member) => {
-              const pct = Math.round((member.active_complaints / maxActive) * 100);
-              const isOverloaded = member.active_complaints >= 5;
+            {safeStaff.map((member) => {
+              const activeCount = Number(member.active_complaints) || 0;
+              const pct = Math.round((activeCount / maxActive) * 100);
+              const isOverloaded = activeCount >= 5;
 
               return (
                 <div key={member.id}>

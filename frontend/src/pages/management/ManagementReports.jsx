@@ -47,7 +47,7 @@ const ManagementReports = () => {
       setLoading(true);
       setError(null);
 
-      const [summaryRes, deptRes, staffRes, slaRes, resPerfRes, deptListRes] = await Promise.all([
+      const [summaryRes, deptRes, staffRes, slaRes, resPerfRes, deptListRes] = await Promise.allSettled([
         managementApi.getReports(filters),
         managementApi.getDepartmentPerformance(),
         managementApi.getStaffPerformance(),
@@ -56,12 +56,12 @@ const ManagementReports = () => {
         departmentsApi.list()
       ]);
 
-      if (summaryRes.data?.success) setSummaryData(summaryRes.data.summary);
-      if (deptRes.data?.success) setDeptData(deptRes.data.departments || []);
-      if (staffRes.data?.success) setStaffData(staffRes.data.staff || []);
-      if (slaRes.data?.success) setSlaData(slaRes.data.sla_performance);
-      if (resPerfRes.data?.success) setResolutionData(resPerfRes.data);
-      if (deptListRes.data?.success) setDepartments(deptListRes.data.departments || []);
+      if (summaryRes.status === 'fulfilled' && summaryRes.value.data?.success) setSummaryData(summaryRes.value.data.summary);
+      if (deptRes.status === 'fulfilled' && deptRes.value.data?.success) setDeptData(deptRes.value.data.departments || []);
+      if (staffRes.status === 'fulfilled' && staffRes.value.data?.success) setStaffData(staffRes.value.data.staff || []);
+      if (slaRes.status === 'fulfilled' && slaRes.value.data?.success) setSlaData(slaRes.value.data.sla_performance);
+      if (resPerfRes.status === 'fulfilled' && resPerfRes.value.data?.success) setResolutionData(resPerfRes.value.data);
+      if (deptListRes.status === 'fulfilled' && deptListRes.value.data?.success) setDepartments(deptListRes.value.data.departments || []);
     } catch (err) {
       setError(err.message || 'Failed to load report analytics.');
     } finally {

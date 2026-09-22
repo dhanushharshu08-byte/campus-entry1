@@ -46,6 +46,8 @@ const NotificationPanel = ({ notifications, onClose, onRefresh }) => {
       onClose();
       if (user?.role === 'maintenance') {
         navigate(`/maintenance/complaints/${notif.complaint_id}`);
+      } else if (user?.role === 'management') {
+        navigate(`/management/complaints/${notif.complaint_id}`);
       } else {
         navigate(`/complaints/${notif.complaint_id}`);
       }

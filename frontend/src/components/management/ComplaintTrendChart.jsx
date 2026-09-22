@@ -2,7 +2,8 @@ import React from 'react';
 import { TrendingUp } from 'lucide-react';
 
 const ComplaintTrendChart = ({ trends = [] }) => {
-  const maxVal = Math.max(...trends.map(t => t.complaints), 1);
+  const safeTrends = Array.isArray(trends) ? trends : [];
+  const maxVal = Math.max(...safeTrends.map(t => Number(t.complaints) || 0), 1);
 
   return (
     <div className="card">
@@ -14,14 +15,15 @@ const ComplaintTrendChart = ({ trends = [] }) => {
       </div>
 
       <div style={{ padding: '1.25rem' }}>
-        {trends.length === 0 ? (
+        {safeTrends.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-slate-400)', fontSize: '0.875rem' }}>
             No trend data recorded.
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '140px', paddingTop: '1rem', borderBottom: '1px solid var(--color-slate-200)' }}>
-            {trends.map((t, idx) => {
-              const heightPct = Math.max(8, Math.round((t.complaints / maxVal) * 100));
+            {safeTrends.map((t, idx) => {
+              const count = Number(t.complaints) || 0;
+              const heightPct = Math.max(8, Math.round((count / maxVal) * 100));
               const displayDate = t.date ? t.date.split('-').slice(1).join('/') : '';
               return (
                 <div 

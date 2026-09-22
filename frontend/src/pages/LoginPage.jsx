@@ -314,7 +314,7 @@ const LoginPage = () => {
         <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-slate-600)' }}>
           Don't have an institutional account?{' '}
           <Link to="/register" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>
-            Register as Student / Faculty / Staff
+            Register as Student or Faculty
           </Link>
         </div>
       </div>
