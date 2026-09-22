@@ -28,6 +28,10 @@ export const StatusBadge = ({ status, size = 'normal' }) => {
       badgeClass = 'badge-closed';
       Icon = CheckCircle2;
       break;
+    case 'reopened':
+      badgeClass = 'badge-reopened';
+      Icon = AlertTriangle;
+      break;
     default:
       badgeClass = 'badge-submitted';
       Icon = Clock;
@@ -43,22 +47,22 @@ export const StatusBadge = ({ status, size = 'normal' }) => {
 
 export const PriorityBadge = ({ priority, size = 'normal' }) => {
   const norm = (priority || '').toLowerCase();
-  let badgeClass = 'prio-medium';
+  let badgeClass = 'priority-medium prio-medium';
   let Icon = Clock;
 
-  if (norm === 'high') {
-    badgeClass = 'prio-high';
+  if (norm === 'high' || norm === 'urgent' || norm === 'critical') {
+    badgeClass = 'priority-high prio-high';
     Icon = AlertTriangle;
   } else if (norm === 'low') {
-    badgeClass = 'prio-low';
+    badgeClass = 'priority-low prio-low';
     Icon = Clock;
   } else {
-    badgeClass = 'prio-medium';
+    badgeClass = 'priority-medium prio-medium';
     Icon = Clock;
   }
 
   return (
-    <span className={`prio-badge ${badgeClass} ${size === 'sm' ? 'prio-sm' : ''}`}>
+    <span className={`priority-badge prio-badge ${badgeClass} ${size === 'sm' ? 'badge-sm prio-sm' : ''}`}>
       <Icon size={size === 'sm' ? 11 : 13} />
       <span>{priority || 'Medium'}</span>
     </span>
