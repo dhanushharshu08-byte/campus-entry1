@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "name": "campus-entry1",
   "buildCommand": "npm --prefix frontend install && npm --prefix frontend run build",
   "outputDirectory": "frontend/dist",
   "rewrites": [
