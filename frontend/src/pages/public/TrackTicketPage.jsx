@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import axios from 'axios';
+import { complaintsApi } from '../../services/api';
 import { 
   Search, 
   Shield, 
@@ -34,14 +34,14 @@ const TrackTicketPage = () => {
     setComplaint(null);
 
     try {
-      const res = await axios.get(`/api/complaints/track/${encodeURIComponent(idToSearch.trim())}`);
+      const res = await complaintsApi.track(idToSearch.trim());
       if (res.data && res.data.success) {
         setComplaint(res.data.complaint);
       } else {
-        setErrorMsg(res.data.message || 'Ticket not found.');
+        setErrorMsg(res.data?.message || 'Ticket not found.');
       }
     } catch (err) {
-      setErrorMsg(err?.response?.data?.message || `No grievance ticket found matching '${idToSearch}'. Please check your Ticket ID.`);
+      setErrorMsg(err.message || `No grievance ticket found matching '${idToSearch}'. Please check your Ticket ID.`);
     } finally {
       setLoading(false);
     }

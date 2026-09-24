@@ -19,6 +19,7 @@ import CampusMapPage from './pages/public/CampusMapPage';
 
 // Authentication & Core
 import LoginPage from './pages/LoginPage';
+import MaintenanceLoginPage from './pages/MaintenanceLoginPage';
 import RegisterPage from './pages/RegisterPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -84,6 +85,8 @@ function App() {
             {/* 2. AUTHENTICATED PORTAL & DASHBOARD APP (MainLayout) */}
             <Route element={<MainLayout />}>
               <Route path="login" element={<LoginPage />} />
+              <Route path="maintenance/login" element={<MaintenanceLoginPage />} />
+              <Route path="maintenance-login" element={<Navigate to="/maintenance/login" replace />} />
               <Route path="register" element={<RegisterPage />} />
               <Route path="dashboard" element={<DynamicDashboardRedirect />} />
 

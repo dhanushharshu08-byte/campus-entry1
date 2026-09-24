@@ -67,7 +67,7 @@ const ManagementStaff = () => {
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}
           >
             <Plus size={16} />
-            <span>+ Create Maintenance Staff</span>
+            <span>+ Add Maintenance Staff</span>
           </button>
           <button
             type="button"
@@ -76,7 +76,7 @@ const ManagementStaff = () => {
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}
           >
             <Shield size={16} color="#2563eb" />
-            <span>+ Create Management Staff</span>
+            <span>+ Add Management User</span>
           </button>
           <button 
             type="button" 

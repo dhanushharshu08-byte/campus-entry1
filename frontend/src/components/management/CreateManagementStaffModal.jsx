@@ -98,9 +98,9 @@ const CreateManagementStaffModal = ({ isOpen, onClose, onSuccess }) => {
   };
 
   return (
-    <div className="modal-backdrop" style={{ zIndex: 1050 }}>
-      <div className="modal-content" style={{ maxWidth: '540px', width: '90%', borderRadius: '12px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
-        <div className="modal-header" style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--color-slate-200)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, zIndex: 1050, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', padding: '1rem' }}>
+      <div className="modal-content" style={{ maxWidth: '540px', width: '100%', backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div className="modal-header" style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--color-slate-200)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--color-slate-900)' }}>
             <div style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Shield size={18} />
@@ -118,8 +118,8 @@ const CreateManagementStaffModal = ({ isOpen, onClose, onSuccess }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          <div className="modal-body" style={{ padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1.1rem', overflowY: 'auto', flex: 1 }}>
             {errorMessage && (
               <div className="alert alert-danger" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', fontSize: '0.85rem' }}>
                 <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
@@ -237,7 +237,7 @@ const CreateManagementStaffModal = ({ isOpen, onClose, onSuccess }) => {
             </div>
           </div>
 
-          <div className="modal-footer" style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--color-slate-200)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.75rem' }}>
+          <div className="modal-footer" style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--color-slate-200)', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.75rem', flexShrink: 0 }}>
             <button
               type="button"
               className="btn btn-secondary"

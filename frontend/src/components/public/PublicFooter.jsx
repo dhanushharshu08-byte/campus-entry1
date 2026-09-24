@@ -59,6 +59,7 @@ const PublicFooter = () => {
               <li><Link to="/facilities">Campus Facilities</Link></li>
               <li><Link to="/track">Track Grievance</Link></li>
               <li><Link to="/sla-policy">SLA Guidelines</Link></li>
+              <li><Link to="/maintenance/login" style={{ color: '#fbbf24', fontWeight: 600 }}>Technician Login</Link></li>
               <li><Link to="/contact">Emergency Helpline</Link></li>
             </ul>
           </div>

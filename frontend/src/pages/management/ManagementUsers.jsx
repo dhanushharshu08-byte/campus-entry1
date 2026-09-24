@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { managementApi, departmentsApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import CreateMaintenanceStaffModal from '../../components/management/CreateMaintenanceStaffModal';
+import CreateManagementStaffModal from '../../components/management/CreateManagementStaffModal';
 import { 
   Users, 
   Search, 
@@ -826,210 +828,26 @@ const ManagementUsers = ({ defaultTab = 'all' }) => {
       {/* ============================================================= */}
       {/* 1. Modal: Add Maintenance Staff */}
       {/* ============================================================= */}
-      {showAddMaintenanceModal && (
-        <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: '520px' }}>
-            <div className="modal-header">
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Wrench size={18} color="#b45309" /> Add Maintenance Staff
-              </h3>
-              <button className="modal-close-btn" onClick={() => setShowAddMaintenanceModal(false)}>
-                <X size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleCreateMaintenance}>
-              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div>
-                  <label className="form-label">Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    className="form-control"
-                    placeholder="e.g. Ravi Kumar"
-                    value={staffForm.name}
-                    onChange={(e) => setStaffForm({ ...staffForm, name: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label">Email Address *</label>
-                  <input
-                    type="email"
-                    required
-                    className="form-control"
-                    placeholder="e.g. ravi.electrical@college.edu"
-                    value={staffForm.email}
-                    onChange={(e) => setStaffForm({ ...staffForm, email: e.target.value })}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <div>
-                    <label className="form-label">Department *</label>
-                    <select
-                      required
-                      className="form-control"
-                      value={staffForm.department_id}
-                      onChange={(e) => setStaffForm({ ...staffForm, department_id: e.target.value })}
-                    >
-                      <option value="">Select Department...</option>
-                      {departments.map((d) => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="form-label">Phone Number</label>
-                    <input
-                      type="tel"
-                      className="form-control"
-                      placeholder="+91 9876543210"
-                      value={staffForm.phone}
-                      onChange={(e) => setStaffForm({ ...staffForm, phone: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <div>
-                    <label className="form-label">Password (min 8 chars) *</label>
-                    <input
-                      type="password"
-                      required
-                      minLength={8}
-                      className="form-control"
-                      placeholder="••••••••"
-                      value={staffForm.password}
-                      onChange={(e) => setStaffForm({ ...staffForm, password: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Confirm Password *</label>
-                    <input
-                      type="password"
-                      required
-                      minLength={8}
-                      className="form-control"
-                      placeholder="••••••••"
-                      value={staffForm.confirm_password}
-                      onChange={(e) => setStaffForm({ ...staffForm, confirm_password: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-slate-500)' }}>
-                  Role is automatically assigned as <strong>maintenance</strong>. Password will be securely hashed.
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowAddMaintenanceModal(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={actionLoading}>
-                  {actionLoading ? 'Creating Staff...' : 'Create Maintenance Staff'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CreateMaintenanceStaffModal
+        isOpen={showAddMaintenanceModal}
+        onClose={() => setShowAddMaintenanceModal(false)}
+        onSuccess={(createdUser) => {
+          setFeedback(`Maintenance staff account created successfully for ${createdUser.name} (${createdUser.email}).`);
+          fetchUsers();
+        }}
+      />
 
       {/* ============================================================= */}
       {/* 2. Modal: Add Management User */}
       {/* ============================================================= */}
-      {showAddManagementModal && (
-        <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: '520px' }}>
-            <div className="modal-header">
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Shield size={18} color="#2563eb" /> Add Management User
-              </h3>
-              <button className="modal-close-btn" onClick={() => setShowAddManagementModal(false)}>
-                <X size={18} />
-              </button>
-            </div>
-            <form onSubmit={handleCreateManagement}>
-              <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div>
-                  <label className="form-label">Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    className="form-control"
-                    placeholder="e.g. Dean of Infrastructure"
-                    value={mgmtForm.name}
-                    onChange={(e) => setMgmtForm({ ...mgmtForm, name: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label">Email Address *</label>
-                  <input
-                    type="email"
-                    required
-                    className="form-control"
-                    placeholder="e.g. admin2@college.edu"
-                    value={mgmtForm.email}
-                    onChange={(e) => setMgmtForm({ ...mgmtForm, email: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label">Phone Number</label>
-                  <input
-                    type="tel"
-                    className="form-control"
-                    placeholder="+91 9876543210"
-                    value={mgmtForm.phone}
-                    onChange={(e) => setMgmtForm({ ...mgmtForm, phone: e.target.value })}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <div>
-                    <label className="form-label">Password (min 8 chars) *</label>
-                    <input
-                      type="password"
-                      required
-                      minLength={8}
-                      className="form-control"
-                      placeholder="••••••••"
-                      value={mgmtForm.password}
-                      onChange={(e) => setMgmtForm({ ...mgmtForm, password: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="form-label">Confirm Password *</label>
-                    <input
-                      type="password"
-                      required
-                      minLength={8}
-                      className="form-control"
-                      placeholder="••••••••"
-                      value={mgmtForm.confirm_password}
-                      onChange={(e) => setMgmtForm({ ...mgmtForm, confirm_password: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-slate-500)' }}>
-                  Role is strictly assigned as <strong>management</strong> with full campus administration privileges.
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowAddManagementModal(false)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={actionLoading}>
-                  {actionLoading ? 'Creating User...' : 'Create Management Account'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <CreateManagementStaffModal
+        isOpen={showAddManagementModal}
+        onClose={() => setShowAddManagementModal(false)}
+        onSuccess={(createdUser) => {
+          setFeedback(`Management administrator account created successfully for ${createdUser.name} (${createdUser.email}).`);
+          fetchUsers();
+        }}
+      />
 
       {/* ============================================================= */}
       {/* 3. Modal: Edit User Details */}

@@ -311,10 +311,42 @@ const LoginPage = () => {
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-slate-600)' }}>
+        <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-slate-600)', marginBottom: '1.25rem' }}>
           Don't have an institutional account?{' '}
           <Link to="/register" style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>
             Register as Student or Faculty
+          </Link>
+        </div>
+
+        {/* Dedicated Maintenance Gateway Link */}
+        <div 
+          style={{
+            padding: '0.75rem 1rem',
+            borderRadius: '10px',
+            backgroundColor: '#fffbeb',
+            border: '1px solid #fde68a',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '0.8rem'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#92400e', fontWeight: 600 }}>
+            <Wrench size={15} color="#d97706" />
+            <span>Campus Maintenance Staff?</span>
+          </div>
+          <Link 
+            to="/maintenance/login" 
+            style={{ 
+              color: '#d97706', 
+              fontWeight: 700, 
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.2rem'
+            }}
+          >
+            Technician Portal &rarr;
           </Link>
         </div>
       </div>

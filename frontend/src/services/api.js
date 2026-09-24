@@ -77,6 +77,7 @@ export const departmentsApi = {
 export const complaintsApi = {
   list: (params) => api.get('/api/complaints', { params }),
   get: (id) => api.get(`/api/complaints/${id}`),
+  track: (ticketId) => api.get(`/api/complaints/track/${encodeURIComponent(ticketId)}`),
   create: (formData) => api.post('/api/complaints', formData, {
     headers: {
       'Content-Type': 'multipart/form-data',

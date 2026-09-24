@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { useAuth, getDashboardRoute } from '../context/AuthContext';
 import { COLLEGE_CONFIG } from '../config/collegeConfig';
 import { CampuSentryShield } from '../components/brand/CollegeBrandLogo';
