@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   GraduationCap,
   School,
+  Building2,
   Info,
   Check,
   X,
@@ -237,10 +238,9 @@ const RegisterPageContent = () => {
 
       const result = await register(payload);
       if (result.success) {
-        setSuccessMsg(`Registration successful as ${getRoleTitle()}! Redirecting to dashboard...`);
-        const targetRoute = result.redirect || getDashboardRoute(role);
+        setSuccessMsg(`Registration successful as ${getRoleTitle()}! Welcome to CampuSentry.`);
         setTimeout(() => {
-          navigate(targetRoute, { replace: true });
+          navigate('/', { replace: true });
         }, 1000);
       } else {
         if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {

@@ -238,7 +238,7 @@ class MaintenanceAccountCreationTestSuite(unittest.TestCase):
         self.assertEqual(res_stu.get_json()['user']['role'], 'student')
         self.client.post('/api/auth/logout')
 
-        # 2. Register maintenance staff
+        # 2. Maintenance staff CANNOT self-register (security policy: must be created by management).
         res_maint = self.client.post('/api/auth/register', json={
             'name': 'Direct Maintenance Staff',
             'email': 'direct.maint@college.edu',
@@ -246,20 +246,18 @@ class MaintenanceAccountCreationTestSuite(unittest.TestCase):
             'department': 'Electrical',
             'password': 'Password@123'
         })
-        self.assertEqual(res_maint.status_code, 201)
-        self.assertEqual(res_maint.get_json()['user']['role'], 'maintenance')
-        self.client.post('/api/auth/logout')
+        self.assertEqual(res_maint.status_code, 403)
+        self.assertFalse(res_maint.get_json()['success'])
 
-        # 3. Register admin / management
+        # 3. Management / admin CANNOT self-register (security policy: must be created by management).
         res_admin = self.client.post('/api/auth/register', json={
             'name': 'Direct Admin Staff',
             'email': 'direct.admin@college.edu',
             'role': 'management',
             'password': 'Password@123'
         })
-        self.assertEqual(res_admin.status_code, 201)
-        self.assertEqual(res_admin.get_json()['user']['role'], 'management')
-        self.client.post('/api/auth/logout')
+        self.assertEqual(res_admin.status_code, 403)
+        self.assertFalse(res_admin.get_json()['success'])
 
         # 4. Attempt registration with unknown/invalid role
         res_invalid = self.client.post('/api/auth/register', json={
