@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify, current_app
-from flask_login import login_required, current_user
+from flask_login import current_user
 from sqlalchemy import or_
 from extensions import db
 from models.complaint import Complaint, VALID_STATUSES, VALID_PRIORITIES
@@ -26,7 +26,6 @@ from utils.auth_decorators import role_required
 complaints_bp = Blueprint('complaints', __name__, url_prefix='/api/complaints')
 
 @complaints_bp.route('', methods=['POST'])
-@login_required
 @role_required('student', 'faculty')
 def create_complaint():
     """
@@ -211,7 +210,7 @@ def create_complaint():
 
 
 @complaints_bp.route('', methods=['GET'])
-@login_required
+@role_required('student', 'faculty', 'maintenance', 'management')
 def list_complaints():
     """
     List complaints.
@@ -263,7 +262,7 @@ def list_complaints():
 
 
 @complaints_bp.route('/<int:complaint_id>', methods=['GET'])
-@login_required
+@role_required('student', 'faculty', 'maintenance', 'management')
 def get_complaint(complaint_id):
     """
     Retrieve single complaint details.
@@ -299,7 +298,7 @@ def get_complaint(complaint_id):
 
 
 @complaints_bp.route('/<int:complaint_id>/close', methods=['PATCH', 'POST', 'PUT'])
-@login_required
+@role_required('student', 'faculty', 'maintenance', 'management')
 def close_complaint(complaint_id):
     """
     Closes a resolved grievance ticket.
@@ -380,7 +379,7 @@ def close_complaint(complaint_id):
 
 
 @complaints_bp.route('/<int:complaint_id>/reopen', methods=['PATCH', 'POST', 'PUT'])
-@login_required
+@role_required('student', 'faculty', 'maintenance', 'management')
 def reopen_complaint(complaint_id):
     """
     Reopens a resolved grievance ticket back to 'In Progress'.

@@ -59,7 +59,7 @@ def create_app(config_class=Config):
     
     # Login Manager setup
     login_manager.init_app(app)
-    login_manager.session_protection = 'strong'
+    login_manager.session_protection = 'basic'
 
     @login_manager.unauthorized_handler
     def handle_unauthorized():
@@ -68,6 +68,32 @@ def create_app(config_class=Config):
             "message": "Authentication required. Please log in.",
             "error_code": "UNAUTHORIZED"
         }), 401
+
+    @app.before_request
+    def authenticate_from_token():
+        """
+        Proactively authenticate the user from the Authorization or X-Auth-Token
+        header before every request. This ensures @login_required works in
+        stateless/serverless environments (e.g. Vercel) where session cookies are
+        not persisted between invocations, and the Bearer token is the only
+        credential present.
+        """
+        from flask_login import current_user, login_user
+        if not current_user.is_authenticated:
+            from models.user import User
+            token = None
+            auth_header = request.headers.get('Authorization', '')
+            if auth_header.startswith('Bearer '):
+                token = auth_header[len('Bearer '):].strip()
+            elif auth_header:
+                token = auth_header.strip()
+            if not token:
+                token = (request.headers.get('X-Auth-Token') or
+                         request.headers.get('X-Session-Token') or '').strip()
+            if token:
+                user = User.verify_auth_token(token)
+                if user and user.is_active:
+                    login_user(user, remember=True)
 
     # Security Headers Middleware
     @app.after_request
