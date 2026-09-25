@@ -191,8 +191,14 @@ def create_app(config_class=Config):
         except Exception as err:
             logger.debug(f"System settings init notice: {err}")
 
-        # Ensure baseline demo accounts always exist
+        # Ensure baseline demo accounts and departments exist (skipped in unit testing environments)
         if not app.config.get('TESTING', False) and os.environ.get('FLASK_ENV') != 'testing' and os.environ.get('TESTING') != 'true':
+            try:
+                from routes.departments import ensure_seed_departments
+                ensure_seed_departments()
+            except Exception as dept_seed_err:
+                logger.debug(f"Department seed notice: {dept_seed_err}")
+
             try:
                 from models.user import User
                 from models.department import Department

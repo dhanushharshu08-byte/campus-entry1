@@ -63,15 +63,57 @@ def create_complaint():
     else:
         dept = None
         try:
-            dept_id_str = dept_id_raw.strip()
+            from routes.departments import ensure_seed_departments
+            dept_id_str = str(dept_id_raw).strip()
+
+            # Canonical ID to fallback name mapping for resilience across seeds
+            ID_TO_NAME_FALLBACK = {
+                1: 'Electrical',
+                2: 'Plumbing',
+                3: 'Civil',
+                4: 'Carpentry',
+                5: 'Cleaning',
+                6: 'IT / Network',
+                7: 'Other',
+                8: 'Carpentry',
+                9: 'Cleaning'
+            }
+
             if dept_id_str.isdigit():
-                department_id = int(dept_id_str)
-                dept = db.session.get(Department, department_id)
+                d_id = int(dept_id_str)
+                dept = db.session.get(Department, d_id)
+                if not dept and d_id in ID_TO_NAME_FALLBACK:
+                    fallback_name = ID_TO_NAME_FALLBACK[d_id]
+                    dept = Department.query.filter(db.func.lower(Department.name) == fallback_name.lower()).first()
             else:
-                dept = Department.query.filter_by(name=dept_id_str).first()
-                if dept:
+                normalized_name = dept_id_str.lower().replace(' ', '')
+                for d in Department.query.all():
+                    if d.name.lower().replace(' ', '') == normalized_name or d.name.lower() == dept_id_str.lower():
+                        dept = d
+                        break
+
+            # If department not yet populated in database instance, ensure seeds and retry
+            if not dept:
+                ensure_seed_departments()
+                if dept_id_str.isdigit():
+                    d_id = int(dept_id_str)
+                    dept = db.session.get(Department, d_id)
+                    if not dept and d_id in ID_TO_NAME_FALLBACK:
+                        fallback_name = ID_TO_NAME_FALLBACK[d_id]
+                        dept = Department.query.filter(db.func.lower(Department.name) == fallback_name.lower()).first()
+                else:
+                    normalized_name = dept_id_str.lower().replace(' ', '')
+                    for d in Department.query.all():
+                        if d.name.lower().replace(' ', '') == normalized_name or d.name.lower() == dept_id_str.lower():
+                            dept = d
+                            break
+
+            if dept:
+                if dept.is_active:
                     department_id = dept.id
-            if not dept or not dept.is_active:
+                else:
+                    errors.append("Selected department is invalid or inactive.")
+            else:
                 errors.append("Selected department is invalid or inactive.")
         except (ValueError, TypeError):
             errors.append("Invalid department ID.")
