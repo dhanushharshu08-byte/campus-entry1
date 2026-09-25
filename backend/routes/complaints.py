@@ -64,7 +64,7 @@ def create_complaint():
         dept = None
         try:
             from routes.departments import ensure_seed_departments
-            dept_id_str = str(dept_id_raw).strip()
+            dept_id_str = dept_id_raw.strip()
 
             # Canonical ID to fallback name mapping for resilience across seeds
             ID_TO_NAME_FALLBACK = {
