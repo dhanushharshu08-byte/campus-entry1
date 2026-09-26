@@ -37,7 +37,7 @@ class User(UserMixin, db.Model):
         if email is not None:
             self.email = email.strip().lower() if isinstance(email, str) else email
         if role is not None:
-            self.role = role.strip().lower() if isinstance(role, str) else role
+            self.role = str(role).strip().lower() if isinstance(role, str) else str(role).strip().lower()
         if department_id is not None:
             self.department_id = department_id
         if department is not None:
@@ -83,11 +83,13 @@ class User(UserMixin, db.Model):
         if not dept_name and getattr(self, 'department_rel', None):
             dept_name = self.department_rel.name
 
+        normalized_role = (self.role or 'student').strip().lower()
+
         return {
             'id': self.id,
             'name': self.name,
             'email': self.email,
-            'role': self.role,
+            'role': normalized_role,
             'department': dept_name,
             'department_id': self.department_id,
             'employee_or_student_id': self.employee_or_student_id,
@@ -107,10 +109,11 @@ class User(UserMixin, db.Model):
         except Exception:
             secret = 'campus_sentry_secure_production_secret_key_2026_acetcbe'
         s = URLSafeTimedSerializer(secret, salt='campusentry-auth-token-v1')
+        normalized_role = (self.role or 'student').strip().lower()
         return s.dumps({
             'user_id': self.id,
             'email': self.email,
-            'role': self.role,
+            'role': normalized_role,
             'name': self.name
         })
 

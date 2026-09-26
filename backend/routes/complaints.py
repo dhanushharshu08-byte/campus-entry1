@@ -261,10 +261,12 @@ def list_complaints():
     """
     query = Complaint.query
 
+    user_role = str(getattr(current_user, 'role', '') or '').strip().lower()
+
     # Enforce role ownership for student and faculty
-    if current_user.role in {'student', 'faculty'}:
+    if user_role in {'student', 'faculty'}:
         query = query.filter_by(created_by=current_user.id)
-    elif current_user.role == 'maintenance':
+    elif user_role == 'maintenance':
         if current_user.department_id:
             query = query.filter_by(department_id=current_user.department_id)
 
@@ -317,15 +319,17 @@ def get_complaint(complaint_id):
             "message": "Complaint not found."
         }), 404
 
+    user_role = str(getattr(current_user, 'role', '') or '').strip().lower()
+
     # Ownership check
-    if current_user.role in {'student', 'faculty'} and complaint.created_by != current_user.id:
+    if user_role in {'student', 'faculty'} and complaint.created_by != current_user.id:
         return jsonify({
             "success": False,
             "message": "You do not have permission to view this grievance."
         }), 403
 
     # For student/faculty, filter out internal management remarks
-    if current_user.role in {'student', 'faculty'}:
+    if user_role in {'student', 'faculty'}:
         logs = StatusLog.query.filter_by(complaint_id=complaint.id, is_internal=False).order_by(StatusLog.timestamp.asc()).all()
     else:
         logs = StatusLog.query.filter_by(complaint_id=complaint.id).order_by(StatusLog.timestamp.asc()).all()

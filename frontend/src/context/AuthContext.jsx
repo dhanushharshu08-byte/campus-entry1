@@ -5,7 +5,7 @@ import { initializeSocket, disconnectSocket } from '../services/socket';
 const AuthContext = createContext(null);
 
 export const getDashboardRoute = (role) => {
-  switch ((role || '').toLowerCase()) {
+  switch ((role || '').toLowerCase().trim()) {
     case 'student':
       return '/student/dashboard';
     case 'faculty':
@@ -13,6 +13,8 @@ export const getDashboardRoute = (role) => {
     case 'maintenance':
       return '/maintenance/dashboard';
     case 'management':
+    case 'admin':
+    case 'administrator':
       return '/management/dashboard';
     default:
       return '/login';
@@ -24,7 +26,14 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
       const stored = localStorage.getItem('campusentry_user');
-      return stored ? JSON.parse(stored) : null;
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.role) {
+          parsed.role = String(parsed.role).trim().toLowerCase();
+        }
+        return parsed;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -37,17 +46,19 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       const res = await authApi.getCurrentUser();
       if (res.data?.success && res.data?.user) {
-        setUser(res.data.user);
+        const u = { ...res.data.user };
+        if (u.role) u.role = String(u.role).trim().toLowerCase();
+        setUser(u);
         try {
-          localStorage.setItem('campusentry_user', JSON.stringify(res.data.user));
+          localStorage.setItem('campusentry_user', JSON.stringify(u));
           if (res.data?.token) {
             localStorage.setItem('campusentry_token', res.data.token);
           }
         } catch {
           // localStorage write failure ignore
         }
-        initializeSocket(res.data.user);
-        return res.data.user;
+        initializeSocket(u);
+        return u;
       } else {
         setUser(null);
         try {
@@ -98,7 +109,8 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const res = await authApi.login(credentials);
-      const loggedUser = res.data.user;
+      const loggedUser = { ...res.data.user };
+      if (loggedUser.role) loggedUser.role = String(loggedUser.role).trim().toLowerCase();
       setUser(loggedUser);
       try {
         localStorage.setItem('campusentry_user', JSON.stringify(loggedUser));
@@ -120,7 +132,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await authApi.register(userData);
       if (res.data?.success && res.data?.user) {
-        const registeredUser = res.data.user;
+        const registeredUser = { ...res.data.user };
+        if (registeredUser.role) registeredUser.role = String(registeredUser.role).trim().toLowerCase();
         setUser(registeredUser);
         try {
           localStorage.setItem('campusentry_user', JSON.stringify(registeredUser));

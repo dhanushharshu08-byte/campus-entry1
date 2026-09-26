@@ -22,8 +22,16 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   if (allowedRoles && allowedRoles.length > 0) {
-    const userRole = (user.role || '').toLowerCase();
-    const hasRole = allowedRoles.map(r => r.toLowerCase()).includes(userRole);
+    const rawRole = user.role || user.user_role || '';
+    let userRole = String(rawRole).trim().toLowerCase();
+    const normalizedAllowed = allowedRoles.map(r => String(r).trim().toLowerCase());
+    
+    // Support admin alias for management role
+    if (userRole in { admin: true, administrator: true } && normalizedAllowed.includes('management')) {
+      userRole = 'management';
+    }
+
+    const hasRole = normalizedAllowed.includes(userRole);
 
     if (!hasRole) {
       // Redirect unauthorized role to their own designated dashboard
