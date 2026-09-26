@@ -13,13 +13,16 @@ except ImportError:
 def _get_database_uri() -> str:
     uri = os.environ.get('DATABASE_URL')
     if uri:
-        if uri == 'sqlite:///:memory:':
+        # Ignore accidental REST/HTTPS API endpoints passed in DATABASE_URL
+        if uri.startswith(('http://', 'https://')):
+            uri = None
+        elif uri == 'sqlite:///:memory:':
             return 'sqlite:///:memory:'
         # Standardize postgres dialect for SQLAlchemy
-        if uri.startswith('postgres://'):
+        elif uri.startswith('postgres://'):
             uri = uri.replace('postgres://', 'postgresql://', 1)
         # Handle relative sqlite path (e.g. sqlite:///campus_helpdesk.db)
-        if uri.startswith('sqlite:///') and not uri.startswith('sqlite:////') and not (len(uri) > 11 and uri[10] == ':'):
+        elif uri.startswith('sqlite:///') and not uri.startswith('sqlite:////') and not (len(uri) > 11 and uri[10] == ':'):
             rel_name = uri.replace('sqlite:///', '')
             if os.environ.get('VERCEL'):
                 tmp_db = f'/tmp/{rel_name}'
@@ -32,7 +35,8 @@ def _get_database_uri() -> str:
                         pass
                 return f"sqlite:///{tmp_db}"
             return f"sqlite:///{os.path.join(BASE_DIR, rel_name).replace('\\', '/')}"
-        return uri
+        if uri:
+            return uri
     
     # Handle Vercel serverless environment (writable in /tmp)
     if os.environ.get('VERCEL'):

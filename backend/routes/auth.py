@@ -407,12 +407,29 @@ def logout():
 @auth_bp.route('/me', methods=['GET'])
 def get_current_user():
     """Returns profile of current authenticated user."""
-    if current_user.is_authenticated:
-        token = current_user.generate_auth_token()
+    active_user = current_user
+    if not getattr(active_user, 'is_authenticated', False):
+        from models.user import User
+        auth_header = (request.headers.get('Authorization') or '').strip()
+        token = ''
+        if auth_header.startswith('Bearer '):
+            token = auth_header[len('Bearer '):].strip()
+        elif auth_header:
+            token = auth_header.strip()
+        if not token:
+            token = (request.headers.get('X-Auth-Token') or request.headers.get('X-Session-Token') or '').strip()
+        if token:
+            user = User.verify_auth_token(token)
+            if user and user.is_active:
+                login_user(user, remember=True)
+                active_user = user
+
+    if getattr(active_user, 'is_authenticated', False):
+        token = active_user.generate_auth_token()
         return jsonify({
             "success": True,
             "token": token,
-            "user": current_user.to_dict()
+            "user": active_user.to_dict()
         }), 200
 
     return jsonify({

@@ -37,7 +37,7 @@ class User(UserMixin, db.Model):
         if email is not None:
             self.email = email.strip().lower() if isinstance(email, str) else email
         if role is not None:
-            self.role = str(role).strip().lower() if isinstance(role, str) else str(role).strip().lower()
+            self.role = role.strip().lower() if isinstance(role, str) else str(role).strip().lower()
         if department_id is not None:
             self.department_id = department_id
         if department is not None:
@@ -162,17 +162,16 @@ def load_user(user_id):
 @login_manager.request_loader
 def load_user_from_request(req):
     """Fallback authentication loader checking Bearer / X-Auth-Token headers."""
-    auth_header = req.headers.get('Authorization')
-    if auth_header:
-        token = auth_header.replace('Bearer ', '', 1).strip() if auth_header.startswith('Bearer ') else auth_header.strip()
-        if token:
-            user = User.verify_auth_token(token)
-            if user and user.is_active:
-                return user
-
-    x_token = req.headers.get('X-Auth-Token') or req.headers.get('X-Session-Token')
-    if x_token:
-        user = User.verify_auth_token(x_token.strip())
+    auth_header = (req.headers.get('Authorization') or '').strip()
+    token = ''
+    if auth_header.startswith('Bearer '):
+        token = auth_header[len('Bearer '):].strip()
+    elif auth_header:
+        token = auth_header.strip()
+    if not token:
+        token = (req.headers.get('X-Auth-Token') or req.headers.get('X-Session-Token') or '').strip()
+    if token:
+        user = User.verify_auth_token(token)
         if user and user.is_active:
             return user
 

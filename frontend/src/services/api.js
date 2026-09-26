@@ -14,9 +14,25 @@ api.interceptors.request.use(
   (config) => {
     try {
       const token = localStorage.getItem('campusentry_token');
-      if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`;
-        config.headers['X-Auth-Token'] = token;
+      if (token && token !== 'undefined' && token !== 'null') {
+        if (config.headers && typeof config.headers.set === 'function') {
+          config.headers.set('Authorization', `Bearer ${token}`);
+          config.headers.set('X-Auth-Token', token);
+        } else {
+          config.headers = config.headers || {};
+          config.headers['Authorization'] = `Bearer ${token}`;
+          config.headers['X-Auth-Token'] = token;
+        }
+      }
+      // If data is FormData, remove Content-Type so Axios/browser sets boundary automatically
+      if (config.data instanceof FormData) {
+        if (config.headers && typeof config.headers.delete === 'function') {
+          config.headers.delete('Content-Type');
+          config.headers.delete('content-type');
+        } else if (config.headers) {
+          delete config.headers['Content-Type'];
+          delete config.headers['content-type'];
+        }
       }
     } catch {
       // ignore localStorage read issues
@@ -78,11 +94,7 @@ export const complaintsApi = {
   list: (params) => api.get('/api/complaints', { params }),
   get: (id) => api.get(`/api/complaints/${id}`),
   track: (ticketId) => api.get(`/api/complaints/track/${encodeURIComponent(ticketId)}`),
-  create: (formData) => api.post('/api/complaints', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  }),
+  create: (formData) => api.post('/api/complaints', formData),
   close: (id) => api.patch(`/api/complaints/${id}/close`),
   reopen: (id, data) => api.patch(`/api/complaints/${id}/reopen`, data),
 };
@@ -121,11 +133,7 @@ export const maintenanceApi = {
   getStats: () => api.get('/api/maintenance/dashboard/stats'),
   getComplaintDetails: (id) => api.get(`/api/maintenance/complaints/${id}`),
   acceptComplaint: (id) => api.patch(`/api/maintenance/complaints/${id}/accept`),
-  resolveComplaint: (id, formData) => api.patch(`/api/maintenance/complaints/${id}/resolve`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  }),
+  resolveComplaint: (id, formData) => api.patch(`/api/maintenance/complaints/${id}/resolve`, formData),
 };
 
 // Management Administration API

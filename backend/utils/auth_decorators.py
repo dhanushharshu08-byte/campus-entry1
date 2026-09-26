@@ -10,7 +10,7 @@ def role_required(*roles: str) -> Callable:
         @role_required("management")
         @role_required("student", "faculty")
     """
-    allowed_roles = {str(r).strip().lower() for r in roles if r}
+    allowed_roles = {r.strip().lower() for r in roles if r}
 
     def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(f)
@@ -19,14 +19,19 @@ def role_required(*roles: str) -> Callable:
             # If not authenticated via session cookie, attempt token authentication fallback
             if not getattr(active_user, 'is_authenticated', False):
                 from models.user import User
-                auth_header = request.headers.get('Authorization') or request.headers.get('X-Auth-Token') or request.headers.get('X-Session-Token')
-                if auth_header:
-                    token = auth_header.replace('Bearer ', '', 1).strip() if auth_header.startswith('Bearer ') else auth_header.strip()
-                    if token:
-                        user = User.verify_auth_token(token)
-                        if user and user.is_active:
-                            login_user(user, remember=True)
-                            active_user = user
+                auth_header = (request.headers.get('Authorization') or '').strip()
+                token = ''
+                if auth_header.startswith('Bearer '):
+                    token = auth_header[len('Bearer '):].strip()
+                elif auth_header:
+                    token = auth_header.strip()
+                if not token:
+                    token = (request.headers.get('X-Auth-Token') or request.headers.get('X-Session-Token') or '').strip()
+                if token:
+                    user = User.verify_auth_token(token)
+                    if user and user.is_active:
+                        login_user(user, remember=True)
+                        active_user = user
 
             # Check authentication
             if not getattr(active_user, 'is_authenticated', False):
