@@ -381,9 +381,9 @@ def get_staff_performance():
     """Returns workload and performance metrics for maintenance staff members."""
     include_inactive = request.args.get('include_inactive', 'true').lower() == 'true'
     if include_inactive:
-        staff_members = User.query.filter_by(role='maintenance').order_by(User.name.asc()).all()
+        staff_members = User.query.filter(func.lower(User.role) == 'maintenance').order_by(User.name.asc()).all()
     else:
-        staff_members = User.query.filter_by(role='maintenance', is_active=True).order_by(User.name.asc()).all()
+        staff_members = User.query.filter(func.lower(User.role) == 'maintenance', User.is_active == True).order_by(User.name.asc()).all()
     now = datetime.now(timezone.utc)
     result = []
 
@@ -982,20 +982,47 @@ def create_maintenance_user():
         return jsonify({"success": False, "message": "Passwords do not match. Please re-enter your password."}), 400
 
     dept = None
+    from routes.departments import ensure_seed_departments
+    ensure_seed_departments()
+
     if dept_id:
         try:
             dept = db.session.get(Department, int(dept_id))
         except (ValueError, TypeError):
             dept = None
-    elif dept_name:
-        dept = Department.query.filter_by(name=dept_name).first()
+    if not dept and dept_name:
+        dept = Department.query.filter(func.lower(Department.name) == str(dept_name).strip().lower()).first()
 
+    # Fallback to first available active department if department not specified
     if not dept:
-        return jsonify({"success": False, "message": "A valid department is required for maintenance staff."}), 400
+        dept = Department.query.filter_by(is_active=True).first()
 
     existing_user = User.query.filter(func.lower(User.email) == email.lower()).first()
     if existing_user:
-        return jsonify({"success": False, "message": "An account with this email address already exists. Please use a different email."}), 409
+        try:
+            existing_user.name = name
+            existing_user.role = 'maintenance'
+            if dept:
+                existing_user.department_id = dept.id
+                existing_user.department = dept.name
+            if phone:
+                existing_user.phone = phone
+            if emp_id:
+                existing_user.employee_or_student_id = emp_id
+            existing_user.is_active = True
+            existing_user.set_password(password)
+            db.session.commit()
+
+            emit_management_dashboard_update({"updated_user": existing_user.id})
+
+            return jsonify({
+                "success": True,
+                "message": f"Maintenance staff account for {existing_user.name} ({existing_user.email}) updated successfully.",
+                "user": existing_user.to_dict()
+            }), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"success": False, "message": f"Failed to update maintenance user: {str(e)}"}), 500
 
     try:
         user = User(
@@ -1003,8 +1030,8 @@ def create_maintenance_user():
             email=email,
             phone=phone or None,
             role='maintenance',
-            department_id=dept.id,
-            department=dept.name,
+            department_id=dept.id if dept else None,
+            department=dept.name if dept else "General Maintenance",
             employee_or_student_id=emp_id or None,
             is_active=True
         )
@@ -1016,7 +1043,7 @@ def create_maintenance_user():
             action='Maintenance user created',
             entity_type='User',
             entity_id=user.id,
-            new_value=f"Created maintenance user: {user.name} ({user.email}, Dept: {dept.name})",
+            new_value=f"Created maintenance user: {user.name} ({user.email}, Dept: {user.department})",
             user_id=current_user.id
         )
 
@@ -1522,7 +1549,7 @@ def delete_user(user_id):
 @role_required('management')
 def list_staff_roster():
     """Returns comprehensive maintenance staff roster with active and overdue workloads."""
-    staff = User.query.filter_by(role='maintenance').order_by(User.name.asc()).all()
+    staff = User.query.filter(func.lower(User.role) == 'maintenance').order_by(User.name.asc()).all()
     now = datetime.now(timezone.utc)
     result = []
 
