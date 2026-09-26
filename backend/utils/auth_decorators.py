@@ -27,6 +27,12 @@ def role_required(*roles: str) -> Callable:
                     token = auth_header.strip()
                 if not token:
                     token = (request.headers.get('X-Auth-Token') or request.headers.get('X-Session-Token') or '').strip()
+                if not token and request.form:
+                    token = (request.form.get('token') or request.form.get('auth_token') or '').strip()
+                if not token and request.args:
+                    token = (request.args.get('token') or request.args.get('auth_token') or '').strip()
+                if not token and request.cookies:
+                    token = (request.cookies.get('campusentry_token') or request.cookies.get('token') or '').strip()
                 if token:
                     user = User.verify_auth_token(token)
                     if user and user.is_active:

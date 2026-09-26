@@ -167,6 +167,10 @@ const NewComplaintPage = () => {
       payload.append('priority', formData.priority);
       payload.append('description', formData.description.trim());
       payload.append('issue_photo', selectedFile);
+      const token = localStorage.getItem('campusentry_token');
+      if (token) {
+        payload.append('token', token);
+      }
 
       const res = await complaintsApi.create(payload);
       if (res.data?.success && res.data?.complaint) {
