@@ -43,11 +43,20 @@ def list_maintenance_complaints():
 
     # Department Filter: scope to user's department for specialist staff
     dept_id = request.args.get('department_id', type=int)
-    if dept_id:
+    assigned_to_me = request.args.get('assigned_to_me', 'false').lower() == 'true'
+
+    if assigned_to_me:
+        query = query.filter(Complaint.assigned_to == current_user.id)
+    elif dept_id:
         query = query.filter(Complaint.department_id == dept_id)
     elif current_user.department_id:
-        # Specialist staff only see their own department's complaints
-        query = query.filter(Complaint.department_id == current_user.department_id)
+        # Specialist staff see complaints for their assigned department or tickets assigned to them
+        query = query.filter(
+            or_(
+                Complaint.department_id == current_user.department_id,
+                Complaint.assigned_to == current_user.id
+            )
+        )
 
     # Status Filter
     status = request.args.get('status')
@@ -72,7 +81,7 @@ def list_maintenance_complaints():
     search = request.args.get('search', '').strip()
     if search:
         search_pattern = f"%{search}%"
-        query = query.outerjoin(Department).filter(
+        query = query.outerjoin(Department, Complaint.department_id == Department.id).filter(
             or_(
                 Complaint.complaint_number.ilike(search_pattern),
                 Complaint.title.ilike(search_pattern),
@@ -105,22 +114,37 @@ def list_maintenance_complaints():
 @role_required('maintenance')
 def get_maintenance_stats():
     """
-    Returns summary statistics across ALL maintenance departments.
-    Includes overall status counts and department-wise breakdown.
+    Returns summary statistics across maintenance departments or scoped for specialist staff.
+    Includes overall status counts, my assigned tickets, and department-wise breakdown.
     """
     now = datetime.now(timezone.utc)
 
-    total_complaints = Complaint.query.count()
-    submitted = Complaint.query.filter_by(status='Submitted').count()
-    assigned = Complaint.query.filter_by(status='Assigned').count()
-    in_progress = Complaint.query.filter_by(status='In Progress').count()
-    resolved = Complaint.query.filter_by(status='Resolved').count()
-    closed = Complaint.query.filter_by(status='Closed').count()
+    # Base query scope based on user department
+    base_query = Complaint.query
+    if current_user.department_id:
+        base_query = base_query.filter(
+            or_(
+                Complaint.department_id == current_user.department_id,
+                Complaint.assigned_to == current_user.id
+            )
+        )
 
-    overdue = Complaint.query.filter(
+    total_complaints = base_query.count()
+    submitted = base_query.filter_by(status='Submitted').count()
+    assigned = base_query.filter_by(status='Assigned').count()
+    in_progress = base_query.filter_by(status='In Progress').count()
+    resolved = base_query.filter_by(status='Resolved').count()
+    closed = base_query.filter_by(status='Closed').count()
+
+    overdue = base_query.filter(
         Complaint.status.in_(['Submitted', 'Assigned', 'In Progress']),
         or_(Complaint.is_overdue == True, Complaint.sla_deadline < now)
     ).count()
+
+    # My personal assigned workload
+    my_assigned = Complaint.query.filter_by(assigned_to=current_user.id, status='Assigned').count()
+    my_in_progress = Complaint.query.filter_by(assigned_to=current_user.id, status='In Progress').count()
+    my_total_active = my_assigned + my_in_progress
 
     # Department Summary breakdown (live SQLite query)
     departments = Department.query.filter_by(is_active=True).all()
@@ -140,6 +164,9 @@ def get_maintenance_stats():
             "resolved": resolved,
             "closed": closed,
             "overdue": overdue,
+            "my_active": my_total_active,
+            "my_assigned": my_assigned,
+            "my_in_progress": my_in_progress,
             "by_department": by_department
         }
     }), 200

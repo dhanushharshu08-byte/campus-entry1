@@ -210,23 +210,36 @@ def create_complaint():
                 user_id=current_user.id
             )
 
-        # High Priority Alert for Management
-        if priority == 'High':
-            from models.user import User
-            mgmt_users = User.query.filter_by(role='management', is_active=True).all()
-            for mgr in mgmt_users:
-                hp_notif = Notification(
+        # Notification for Management Users on every new complaint submission
+        from models.user import User
+        dept_display_name = complaint.department.name if complaint.department else 'General'
+        mgmt_users = User.query.filter_by(role='management', is_active=True).all()
+        for mgr in mgmt_users:
+            if priority == 'High':
+                notif_title = f"High Priority Complaint: {complaint.complaint_number}"
+                notif_msg = f"High priority complaint {complaint.complaint_number} ({dept_display_name}) requires attention: {complaint.title}"
+                notif_type = "high_priority"
+            else:
+                notif_title = f"New Complaint: {complaint.complaint_number}"
+                assigned_name = assigned_staff.name if assigned_staff else "Unassigned"
+                notif_msg = f"New {priority} priority complaint submitted for {dept_display_name}: {complaint.title} (Assigned to: {assigned_name})"
+                notif_type = "new_complaint"
+
+            # Avoid duplicate if unassigned notification was already created in assignment_service
+            existing_notif = Notification.query.filter_by(user_id=mgr.id, complaint_id=complaint.id).first()
+            if not existing_notif:
+                mgr_notif = Notification(
                     user_id=mgr.id,
                     complaint_id=complaint.id,
-                    title="High Priority Complaint",
-                    message=f"High priority complaint {complaint.complaint_number} requires attention.",
-                    type="high_priority"
+                    title=notif_title,
+                    message=notif_msg,
+                    type=notif_type
                 )
-                db.session.add(hp_notif)
+                db.session.add(mgr_notif)
                 db.session.flush()
-                emit_user_notification(mgr.id, hp_notif)
+                emit_user_notification(mgr.id, mgr_notif)
 
-            emit_management_dashboard_update(complaint.to_dict())
+        emit_management_dashboard_update(complaint.to_dict())
 
         db.session.commit()
 

@@ -7,9 +7,13 @@ export const SocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(socket.connected);
   const [latency, setLatency] = useState(null);
 
-  const joinUserRoom = useCallback((user) => {
-    if (!user) return;
-    initializeSocket(typeof user === 'object' ? user : { id: user });
+  const joinUserRoom = useCallback((userOrId, role) => {
+    if (!userOrId) return;
+    if (typeof userOrId === 'object') {
+      initializeSocket(userOrId);
+    } else {
+      initializeSocket({ id: userOrId, role: role });
+    }
   }, []);
 
   useEffect(() => {

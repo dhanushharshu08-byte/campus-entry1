@@ -378,8 +378,12 @@ def get_overdue_complaints():
 @login_required
 @role_required('management')
 def get_staff_performance():
-    """Returns workload and performance metrics for active maintenance staff members."""
-    staff_members = User.query.filter_by(role='maintenance', is_active=True).all()
+    """Returns workload and performance metrics for maintenance staff members."""
+    include_inactive = request.args.get('include_inactive', 'true').lower() == 'true'
+    if include_inactive:
+        staff_members = User.query.filter_by(role='maintenance').order_by(User.name.asc()).all()
+    else:
+        staff_members = User.query.filter_by(role='maintenance', is_active=True).order_by(User.name.asc()).all()
     now = datetime.now(timezone.utc)
     result = []
 
@@ -411,7 +415,10 @@ def get_staff_performance():
             "id": staff.id,
             "name": staff.name,
             "email": staff.email,
+            "phone": staff.phone,
+            "is_active": staff.is_active,
             "department": dept_name or "General Maintenance",
+            "department_id": staff.department_id,
             "active_complaints": active_count,
             "assigned": assigned_count,
             "in_progress": in_progress,
@@ -1427,6 +1434,86 @@ def disable_and_reassign_user(user_id):
         "success": True,
         "message": f"User {user.name} deactivated and {len(active_complaints)} active complaint(s) reassigned to {new_staff.name}.",
         "reassigned_count": len(active_complaints)
+    }), 200
+
+
+@management_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@management_bp.route('/staff/<int:user_id>', methods=['DELETE'])
+@login_required
+@role_required('management')
+def delete_user(user_id):
+    """
+    Deletes or removes a user / staff member account.
+    Protects against deleting self or the last active management account.
+    If maintenance staff has active complaints, reassigns them to target technician
+    or unassigns them to prevent orphan records.
+    """
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"success": False, "message": "User not found."}), 404
+
+    # Cannot delete own account
+    if user.id == current_user.id:
+        return jsonify({"success": False, "message": "You cannot delete your own account."}), 400
+
+    # Management safety check
+    if user.role == 'management':
+        active_mgmt_count = User.query.filter_by(role='management', is_active=True).count()
+        if active_mgmt_count <= 1:
+            return jsonify({
+                "success": False,
+                "message": "At least one active management account must remain."
+            }), 400
+
+    data = request.get_json(silent=True) or {}
+    new_staff_id = data.get('new_assigned_to')
+    user_name = user.name
+    user_email = user.email
+    user_role = user.role
+
+    # Reassign or clean up active assigned complaints
+    active_complaints = Complaint.query.filter_by(assigned_to=user.id).all()
+    if active_complaints:
+        target_staff = None
+        if new_staff_id:
+            try:
+                target_staff = db.session.get(User, int(new_staff_id))
+            except (ValueError, TypeError):
+                target_staff = None
+
+        for comp in active_complaints:
+            if target_staff and target_staff.is_active and target_staff.role == 'maintenance':
+                comp.assigned_to = target_staff.id
+            else:
+                comp.assigned_to = None
+                if comp.status == 'Assigned':
+                    comp.status = 'Submitted'
+
+    # Clear user notifications
+    Notification.query.filter_by(user_id=user.id).delete()
+
+    # Clear user references in status logs & audit logs to preserve historical audit trail
+    StatusLog.query.filter_by(changed_by_id=user.id).update({"changed_by_id": None})
+    AuditLog.query.filter_by(user_id=user.id).update({"user_id": None})
+
+    # Log audit entry before deleting
+    log_audit(
+        action=f'{user_role.capitalize()} user deleted',
+        entity_type='User',
+        entity_id=user.id,
+        old_value=f"Deleted {user_name} ({user_email}, Role: {user_role})",
+        user_id=current_user.id
+    )
+
+    db.session.delete(user)
+    db.session.commit()
+
+    emit_user_status_changed(user_id, False)
+    emit_management_dashboard_update({"user_deleted": user_id})
+
+    return jsonify({
+        "success": True,
+        "message": f"{user_role.capitalize()} user {user_name} ({user_email}) has been permanently removed."
     }), 200
 
 

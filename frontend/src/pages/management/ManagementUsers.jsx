@@ -26,7 +26,8 @@ import {
   Phone,
   User as UserIcon,
   Building,
-  Clock
+  Clock,
+  Trash2
 } from 'lucide-react';
 
 const ManagementUsers = ({ defaultTab = 'all' }) => {
@@ -344,6 +345,39 @@ const ManagementUsers = ({ defaultTab = 'all' }) => {
       }
     } catch (err) {
       alert(err.response?.data?.message || err.message || `Failed to update status.`);
+    }
+  };
+
+  // -------------------------------------------------------------
+  // Delete User Account
+  // -------------------------------------------------------------
+  const handleDeleteUser = async (userToDelete) => {
+    if (userToDelete.id === currentUser?.id) {
+      alert('You cannot delete your own account.');
+      return;
+    }
+    if (userToDelete.role === 'management') {
+      const activeMgmt = users.filter((u) => u.role === 'management' && u.is_active);
+      if (activeMgmt.length <= 1) {
+        alert('At least one active management account must remain.');
+        return;
+      }
+    }
+    if (!window.confirm(`Are you sure you want to permanently delete "${userToDelete.name}" (${userToDelete.email})? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      const res = await managementApi.deleteUser(userToDelete.id);
+      if (res.data?.success) {
+        setFeedback(res.data.message);
+        fetchUsers();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'Failed to delete user.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -811,6 +845,17 @@ const ManagementUsers = ({ defaultTab = 'all' }) => {
                           {u.is_active ? <UserX size={12} /> : <UserCheck size={12} />}
                           <span>{u.is_active ? 'Disable' : 'Enable'}</span>
                         </button>
+                        {u.id !== currentUser?.id && (
+                          <button
+                            onClick={() => handleDeleteUser(u)}
+                            className="btn btn-danger-outline"
+                            style={{ padding: '0.3rem 0.5rem', fontSize: '0.75rem', color: '#dc2626' }}
+                            title="Permanently Delete Account"
+                            disabled={actionLoading}
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

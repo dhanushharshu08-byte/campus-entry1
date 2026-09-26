@@ -169,6 +169,8 @@ export const managementApi = {
   getUserActiveComplaints: (id) => api.get(`/api/management/users/${id}/active-complaints`),
   reassignUserComplaints: (id, data) => api.post(`/api/management/users/${id}/reassign-complaints`, data),
   disableAndReassignUser: (id, data) => api.post(`/api/management/users/${id}/disable-and-reassign`, data),
+  deleteUser: (id, data) => api.delete(`/api/management/users/${id}`, { data }),
+  deleteStaff: (id, data) => api.delete(`/api/management/staff/${id}`, { data }),
   getStaffRoster: () => api.get('/api/management/staff'),
 
   // Department Management
